@@ -1,0 +1,658 @@
+<title>זמן אמת — מסמך מסירה שלב פיתוח א׳</title>
+<style>
+:root {
+  --ground: #F0F3F7;
+  --surface: #FFFFFF;
+  --text: #1C2B3A;
+  --muted: #64748B;
+  --border: #DDE3EC;
+  --accent: #E8850A;
+  --accent2: #2D5F8A;
+  --done-fg: #15803D; --done-bg: #DCFCE7;
+  --pend-fg: #B45309; --pend-bg: #FEF3C7;
+  --post-fg: #475569; --post-bg: #F1F5F9;
+  --part-fg: #C2410C; --part-bg: #FFEDD5;
+  --spec-fg: #6D28D9; --spec-bg: #EDE9FE;
+  --client-bg: #EFF6FF; --client-border: #BFDBFE;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{direction:rtl;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:14px;line-height:1.5;color:var(--text)}
+body{background:var(--ground)}
+
+/* HEADER */
+.ph{background:var(--text);color:white;padding:16px 28px;position:sticky;top:0;z-index:200;box-shadow:0 2px 10px rgba(0,0,0,.22)}
+.ph-row{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.ph-title{font-size:17px;font-weight:800;letter-spacing:-.3px}
+.ph-meta{font-size:11px;color:rgba(255,255,255,.45);margin-top:2px}
+.ph-stats{display:flex;gap:7px;flex-wrap:wrap}
+.hst{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:4px 12px 4px 9px;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s,border-color .15s;color:white;white-space:nowrap}
+.hst:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.28)}
+.hst.active{background:rgba(232,133,10,.28);border-color:rgba(232,133,10,.6)}
+.hst-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* FILTER BAR */
+.fb{background:white;border-bottom:1px solid var(--border);padding:8px 28px;display:flex;gap:7px;align-items:center;overflow-x:auto}
+.fb-lbl{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;padding-left:10px;border-left:2px solid var(--border)}
+.fbtn{padding:4px 13px;border-radius:16px;border:1px solid var(--border);background:white;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s;color:var(--text);white-space:nowrap;direction:rtl}
+.fbtn:hover{border-color:var(--muted)}
+.fbtn.active{background:var(--text);color:white;border-color:var(--text)}
+
+/* MAIN */
+.main{max-width:1440px;margin:0 auto;padding:22px 28px 48px}
+
+/* SECTION CARD */
+.sc{background:var(--surface);border-radius:12px;border:1px solid var(--border);overflow:hidden;margin-bottom:22px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+@media(prefers-reduced-motion:no-preference){.sc{animation:fu .25s ease both}@keyframes fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}}
+
+/* SECTION HEAD */
+.sh{background:var(--text);color:white;padding:16px 22px;display:flex;align-items:center;gap:0;position:relative;overflow:hidden;cursor:pointer;user-select:none}
+.sh-bg-letter{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:88px;font-weight:900;line-height:1;color:rgba(232,133,10,.15);pointer-events:none;letter-spacing:-4px}
+.sh-badge{width:34px;height:34px;border-radius:8px;background:rgba(232,133,10,.22);border:1px solid rgba(232,133,10,.38);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:var(--accent);flex-shrink:0;margin-left:13px;z-index:1}
+.sh-info{flex:1;z-index:1}
+.sh-name{font-size:14px;font-weight:800;color:white}
+.sh-source{font-size:10px;color:rgba(255,255,255,.45);margin-top:2px}
+.sh-chips{display:flex;gap:5px;align-items:center;flex-shrink:0;z-index:1;flex-wrap:wrap}
+.sch{padding:3px 9px;border-radius:11px;font-size:11px;font-weight:700;white-space:nowrap}
+.sch-done{background:rgba(21,128,61,.22);color:#86efac}
+.sch-pend{background:rgba(180,83,9,.28);color:#fcd34d}
+.sch-post{background:rgba(100,116,139,.22);color:#94a3b8}
+.sch-part{background:rgba(194,65,12,.25);color:#fdba74}
+.sch-spec{background:rgba(109,40,217,.25);color:#c4b5fd}
+.sh-tog{margin-right:auto;margin-left:0;color:rgba(255,255,255,.45);font-size:16px;z-index:1;padding-right:6px;transition:transform .2s}
+.sh-tog.col{transform:rotate(-90deg)}
+
+/* NOTICE */
+.notice{background:#FFFBEB;border-bottom:1px solid #FDE68A;padding:9px 22px;font-size:12px;color:#92400E;display:flex;align-items:flex-start;gap:7px}
+.notice-icon{font-size:13px;flex-shrink:0;margin-top:1px}
+.notice.blue{background:#EFF6FF;border-bottom-color:#BFDBFE;color:#1E40AF}
+
+/* SUBSECTION */
+.subh{background:#F8FAFC;padding:7px 22px;font-size:10px;font-weight:800;color:var(--accent2);text-transform:uppercase;letter-spacing:.8px;border-bottom:1px solid var(--border);border-top:1px solid var(--border)}
+
+/* TABLE */
+.rt{width:100%;border-collapse:collapse;font-size:13px}
+.rt th{padding:8px 11px;text-align:right;font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--border);white-space:nowrap;background:white}
+.th-c{background:var(--client-bg) !important;color:var(--accent2) !important}
+.rt td{padding:8px 11px;border-bottom:1px solid #F1F5F9;vertical-align:top}
+.rt tr:last-child td{border-bottom:none}
+.rt tr:hover td{background:#FAFBFC}
+.td-c{background:var(--client-bg)}
+.rt tr:hover .td-c{background:#E4EFFC}
+tr.row-hidden{display:none}
+
+/* STATUS BADGES */
+.sb{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:11px;font-size:11px;font-weight:700;white-space:nowrap}
+.s-done{background:var(--done-bg);color:var(--done-fg)}
+.s-pend{background:var(--pend-bg);color:var(--pend-fg)}
+.s-post{background:var(--post-bg);color:var(--post-fg)}
+.s-part{background:var(--part-bg);color:var(--part-fg)}
+.s-spec{background:var(--spec-bg);color:var(--spec-fg)}
+.sb-stack{display:flex;flex-direction:column;gap:3px;align-items:flex-start}
+.price-tag{font-size:10px;color:var(--spec-fg);font-weight:700;margin-top:2px}
+
+/* FORM INPUTS */
+.inp-r,.inp-n{width:100%;border:1px solid var(--client-border);border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;background:white;color:var(--text);transition:border-color .15s,box-shadow .15s;direction:rtl}
+.inp-r:focus,.inp-n:focus{outline:none;border-color:var(--accent2);box-shadow:0 0 0 2px rgba(45,95,138,.1)}
+.inp-n{resize:vertical;min-height:50px}
+.chk{width:17px;height:17px;cursor:pointer;accent-color:var(--done-fg)}
+
+/* WAND NOTE */
+.wn{font-size:11px;color:var(--muted);line-height:1.4;font-style:italic}
+
+/* QUESTIONS */
+.qc{background:var(--surface);border-radius:12px;border:1px solid var(--border);overflow:hidden;margin-bottom:22px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.qh{background:linear-gradient(135deg,#4C1D95 0%,#6D28D9 100%);color:white;padding:16px 22px;display:flex;align-items:center;gap:13px}
+.qi-icon{width:34px;height:34px;background:rgba(255,255,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.qh h2{font-size:14px;font-weight:800}
+.qh p{font-size:11px;opacity:.65;margin-top:2px}
+.qg{padding:18px 22px;border-bottom:1px solid var(--border)}
+.qg:last-child{border-bottom:none}
+.qg-title{font-size:13px;font-weight:800;color:var(--text);margin-bottom:13px;padding-bottom:7px;border-bottom:2px solid var(--border);display:flex;align-items:center;gap:8px}
+.qg-title::before{content:'';display:inline-block;width:3px;height:15px;background:#7C3AED;border-radius:2px;flex-shrink:0}
+.qi{margin-bottom:12px;padding:13px 15px;background:#FDFCFF;border:1px solid #DDD6FE;border-radius:8px;border-right:3px solid #7C3AED}
+.qi:last-child{margin-bottom:0}
+.qt{font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;line-height:1.5;display:flex;align-items:flex-start;gap:7px}
+.qn{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;min-width:19px;background:#7C3AED;color:white;border-radius:50%;font-size:10px;font-weight:800;margin-top:2px}
+.ans-lbl{font-size:10px;font-weight:800;color:#7C3AED;margin-bottom:4px;display:block;text-transform:uppercase;letter-spacing:.5px}
+.ans{width:100%;border:1px solid #DDD6FE;border-radius:6px;padding:7px 11px;font-size:13px;font-family:inherit;color:var(--text);background:white;resize:vertical;min-height:68px;transition:border-color .15s,box-shadow .15s;direction:rtl}
+.ans:focus{outline:none;border-color:#7C3AED;box-shadow:0 0 0 2px rgba(124,58,237,.1)}
+
+/* ACTION BAR */
+.ab{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0 0;flex-wrap:wrap}
+.btn{padding:9px 20px;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;border:none;transition:all .15s;direction:rtl}
+.btn-save{background:var(--text);color:white}.btn-save:hover{background:#2D4A6A}
+.btn-print{background:white;color:var(--text);border:1px solid var(--border)}.btn-print:hover{background:#F8FAFC}
+.save-st{font-size:12px;color:var(--muted)}.save-st.ok{color:var(--done-fg);font-weight:700}
+
+/* LEGEND */
+.legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;padding:8px 28px;background:white;border-bottom:1px solid var(--border);font-size:11px}
+.leg-lbl{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.leg-items{display:flex;gap:12px;flex-wrap:wrap}
+.li{display:flex;align-items:center;gap:5px}
+
+@media print{.ph{position:relative}.fb{display:none}.ab{display:none}.legend{display:none}.rt th{position:relative;top:0}.inp-r,.inp-n,.ans{border:1px solid #ccc}}
+@media(max-width:900px){.main{padding:14px}.ph{padding:12px 14px}.fb{padding:8px 14px}}
+.sb-body.is-col{display:none}
+</style>
+
+<div class="ph">
+  <div class="ph-row">
+    <div>
+      <div class="ph-title">זמן אמת — מסמך מסירה שלב פיתוח א׳</div>
+      <div class="ph-meta">הוכן ע"י Wand · 23.6.2026 · יש למלא את עמודות "זמן אמת" ולאשר בדיקה לכל פריט</div>
+    </div>
+    <div class="ph-stats" id="ph-stats"></div>
+  </div>
+</div>
+
+<div class="legend">
+  <span class="leg-lbl">סימון:</span>
+  <div class="leg-items">
+    <div class="li"><span class="sb s-done">✓ בוצע</span></div>
+    <div class="li"><span class="sb s-pend">⏳ ממתין ללקוח</span></div>
+    <div class="li"><span class="sb s-post">⏸ הוחלט לדחות</span></div>
+    <div class="li"><span class="sb s-part">◑ חלקי</span></div>
+    <div class="li"><span class="sb s-spec">★ לא באפיון</span></div>
+  </div>
+</div>
+
+<div class="fb">
+  <span class="fb-lbl">סנן לפי סטטוס</span>
+  <button class="fbtn active" onclick="setFilter('all',this)">הכל</button>
+  <button class="fbtn" onclick="setFilter('done',this)">בוצע</button>
+  <button class="fbtn" onclick="setFilter('pending',this)">ממתין ללקוח</button>
+  <button class="fbtn" onclick="setFilter('postponed',this)">הוחלט לדחות</button>
+  <button class="fbtn" onclick="setFilter('notinspec',this)">לא באפיון</button>
+</div>
+
+<div class="main">
+  <div id="sections-container"></div>
+
+  <div class="qc">
+    <div class="qh">
+      <div class="qi-icon">?</div>
+      <div>
+        <h2>שאלות פתוחות — נדרשת תשובת זמן אמת</h2>
+        <p>הנושאים הבאים דורשים הבהרה לפני שנוכל להשלים את הפיתוח</p>
+      </div>
+    </div>
+    <div id="questions-container"></div>
+  </div>
+
+  <div class="ab">
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-save" onclick="saveData()">שמור תשובות</button>
+      <button class="btn btn-print" onclick="window.print()">הדפס / PDF</button>
+    </div>
+    <span class="save-st" id="save-st">שינויים לא נשמרו</span>
+  </div>
+</div>
+
+<script>
+const STATUS = {
+  done:      { label:'בוצע',           cls:'s-done', icon:'✓', sch:'sch-done' },
+  pending:   { label:'ממתין ללקוח',    cls:'s-pend', icon:'⏳', sch:'sch-pend' },
+  postponed: { label:'הוחלט לדחות',   cls:'s-post', icon:'⏸', sch:'sch-post' },
+  partial:   { label:'חלקי',           cls:'s-part', icon:'◑', sch:'sch-part' },
+  notinspec: { label:'לא באפיון',      cls:'s-spec', icon:'★', sch:'sch-spec' },
+};
+
+const sections = [
+  {
+    id:'a', letter:'א', title:'תהליך מכירה',
+    source:'אפיון פונקציונאלי — פרק מכירות',
+    subsections:[
+      { title:'קליטה וניתוב לידים', items:[
+        { id:'a1', req:'ליד חדש מהאתר נכנס אוטומטית ל-CRM', status:'done' },
+        { id:'a2', req:'ליד ממספר WhatsApp מכירות — נכנס אוטומטית ל-CRM', status:'pending', note:'ממתין למספר WhatsApp מהלקוח' },
+        { id:'a3', req:'ניתוב אוטומטי: >800 עובדים ← אשר | בקרת כניסה ← בועז | הערכת ביצועים ← ש', status:'done', note:'הניתוב קיים — צריך לחבר את בועז כשיהיה לו יוזר' },
+        { id:'a4', req:"ליד שסומן 'לא רלוונטי' — חובה לציין סיבה לפני שמירה", status:'done' },
+        { id:'a5', req:'המרת ליד ללקוח + איש קשר + עסקה בלחיצה אחת', status:'done' },
+      ]},
+      { title:'ניהול עסקה', items:[
+        { id:'a7', req:'עסקה עוברת בשלבים: אפיון ← הדגמה ← הצ.מ ← מו"מ ← תשלום ← הושלמה', status:'done' },
+        { id:'a8', req:"לא ניתן לסמן עסקה 'הושלמה' ללא הזמנה מאושרת מקושרת", status:'done' },
+        { id:'a9', req:"כשעסקה מושלמת — סטטוס לקוח הופך ל'פעיל' אוטומטית", status:'done' },
+        { id:'a10', req:'כשעסקה מושלמת + חומרה — נפתח טיקט חומרה ב-Desk אוטומטית', status:'done' },
+        { id:'a11', req:'כשעסקה מושלמת + תוכנה — נפתח טיקט תוכנה ב-Desk אוטומטית', status:'done' },
+        { id:'a12', req:'סכום העסקה מתעדכן אוטומטית לפי הצעת המחיר האחרונה', status:'done' },
+        { id:'a13', req:"עסקה 'הושלמה' / 'הפסד' — שדות ננעלים למניעת עריכה", status:'done', note:'נדרש לאמת שנעילת שדות ממומשת בפועל' },
+      ]},
+      { title:'הצעות מחיר', items:[
+        { id:'a14', req:'הצעת מחיר עם 2 עמודות מחיר: תשלום חד-פעמי ותשלום חודשי חוזר', status:'done' },
+        { id:'a15', req:'ניתן לצרף חבילות (Bundle) להצעת מחיר', status:'done' },
+        { id:'a16', req:'בעת הוספת מוצר חומרה — בדיקת מלאי זמין מ-OneView', status:'postponed', note:'ממתין לאינטגרציית OneView' },
+        { id:'a17', req:'הצעה עם הנחה מעל הסף — ננעלת ועוברת לאישור אשר / מאור', status:'pending', note:'הסף טרם הוגדר על-ידי הלקוח' },
+        { id:'a18', req:'שליחה לחתימה דיגיטלית — לקוח בוחר תנאי תשלום בתוך המסמך', status:'done' },
+        { id:'a19', req:'חתימה ← יצירת הזמנה + מייל עם קישור לתשלום אוטומטית', status:'done' },
+        { id:'a20', req:'הצעה פגת תוקף — מסומנת אוטומטית', status:'done' },
+        { id:'a21', req:'Zoho Sign — אינטגרציה מלאה', status:'done' },
+      ]},
+      { title:'הזמנות ותשלום', items:[
+        { id:'a22', req:'קישור תשלום נשלח ללקוח במייל ובוואטסאפ עם יצירת הזמנה', status:'pending', note:'קיים כפונקציה — ממתין לחיבור ספק סליקה' },
+        { id:'a23', req:'אם לא שולם תוך 3 ימים — תזכורת תשלום אוטומטית', status:'done' },
+        { id:'a24', req:"קבלת תשלום ← עדכון הזמנה ל'שולם' אוטומטית", status:'pending', note:'ממתין לספק סליקה' },
+        { id:'a25', req:'שליחת הזמנה ל-OneView בלחיצת כפתור', status:'postponed', note:'פונקציה בנויה — ממתין לאינטגרציית OneView' },
+        { id:'a26', req:'פתיחת פרויקט מתוך הזמנה עבור עסקאות מורכבות', status:'done' },
+      ]},
+      { title:'קטלוג מוצרים', items:[
+        { id:'a27', req:'קטלוג מסונכרן מ-OneView יומי + עדכון ידני', status:'postponed', note:'ממתין לאינטגרציה' },
+        { id:'a28', req:'היררכיית מוצרים: עולם ← משפחה ← סוג מוצר', status:'done', notInSpec:true, note:'לא היה באפיון המקורי — בוצע כחלק מהפיתוח' },
+        { id:'a29', req:'מחירונים לפי כמות (Standard, Volume, Renewal)', status:'done', note:'אוטומציה קיימת — נדרש לאמת אילו מחירונים הוגדרו בפועל' },
+      ]},
+    ]
+  },
+  {
+    id:'b', letter:'ב', title:'תהליך שירות',
+    source:'אפיון פונקציונאלי — פרק שירות',
+    subsections:[
+      { title:'קבלת פנייה וניתוב', items:[
+        { id:'b1', req:'פנייה מהאתר נכנסת אוטומטית כקריאת שירות', status:'pending', note:'ממתין לאישור תוספת ווידג׳ט לפורטל קריאות שירות' },
+        { id:'b2', req:'פנייה בוואטסאפ נכנסת אוטומטית כקריאת שירות', status:'pending', note:'ממתין לחיבור וואטסאפ ואפיון פורטל' },
+        { id:'b3', req:'אישור קבלה אוטומטי ללקוח עם פתיחת קריאה', status:'pending', note:'ממתין לאישור ווידג׳ט לפורטל קריאות שירות' },
+        { id:'b4', req:'ניתוב לנציג קבוע לפי הלקוח, או תור לפי מחלקה', status:'pending', note:'ממתין לכללי הקצאה למחלקת חומרה' },
+      ]},
+      { title:'בדיקת זכאות לשירות', items:[
+        { id:'b5', req:'בכרטיס הקריאה: האם ללקוח יש חוזה שירות פעיל?', status:'done' },
+        { id:'b6', req:"לקוח ללא כיסוי ← כפתור יצירת עסקת 'קריאת שירות' ← מנותב לריקי", status:'done' },
+      ]},
+      { title:'ניהול קריאה ו-SLA', items:[
+        { id:'b7', req:'קריאה עוברת בשלבים: פתוחה ← בטיפול ← תיאום טכנאי ← טכנאי תואם ← סגורה', status:'done' },
+        { id:'b8', req:'SLA: תגובה ראשונה עד 4 שעות | סגירה: 8 שעות (תוכנה) / 48 שעות (חומרה)', status:'done' },
+        { id:'b9', req:'חריגה מ-SLA ← התראה למנהל מחלקה', status:'done' },
+        { id:'b10', req:'ניתוב טיקטים לפי היררכיית קטגוריות (מוצר ← תת-קטגוריה)', status:'done' },
+        { id:'b11', req:'בסגירת קריאה — שאלון CSAT נשלח ללקוח', status:'pending', note:'ממתין להחלטה: default Zoho CSAT או מותאם?' },
+      ]},
+      { title:'תיאום טכנאי', items:[
+        { id:'b12', req:'מהקריאה: תיאום ביקור טכנאי דרך Bookings', status:'done' },
+        { id:'b13', req:'לאחר תיאום — מייל ללקוח עם פרטי הביקור', status:'done' },
+        { id:'b14', req:"כשביקור הסתיים — קריאה מתעדכנת ל'ממתין לסגירה' אוטומטית", status:'done' },
+        { id:'b15', req:'הגדרת שירותים וטכנאים ב-Zoho Bookings (ע"י הלקוח)', status:'done', note:'בוצעה הדרכה לאשר להוספת שירותים ומשאבים' },
+        { id:'b16', req:'הודעות WhatsApp לתיאום ביקור', status:'pending', note:'ממתין לחיבור וואטסאפ' },
+      ]},
+      { title:'חידוש חוזה שירות', items:[
+        { id:'b17', req:'60 יום לפני פקיעה — משימה לאחראי + מייל ללקוח', status:'done' },
+        { id:'b18', req:'30 יום לפני פקיעה — מייל תזכורת נוסף', status:'done' },
+        { id:'b19', req:"כפתור 'צור הצעת חידוש' — עם פריטי החוזה ומחירים עדכניים", status:'postponed', note:'ממתין לאינטגרציית OneView לסנכרון נתוני החוזה' },
+      ]},
+    ]
+  },
+  {
+    id:'c', letter:'ג', title:'תהליך תפעול — טכנאים',
+    source:'אפיון פונקציונאלי — פרק תפעול',
+    subsections:[
+      { title:'תזמון וביקורי שטח', items:[
+        { id:'c1', req:'תיאום ביקור ← מייל ללקוח עם פרטים + יצירת רשומת ביקור ב-CRM', status:'done' },
+        { id:'c2', req:'יום לפני ובבוקר — תזכורת WhatsApp ללקוח', status:'pending', note:'Workflows קיימים — ממתין לחיבור WhatsApp' },
+      ]},
+      { title:'אפליקציית טכנאים (Zoho Creator)', items:[
+        { id:'c3', req:'טכנאי רואה ביקורי היום שלו: לקוח, כתובת, Waze, חיוג ישיר', status:'done' },
+        { id:'c4', req:'ביקורים עתידיים עם חיפוש וקיבוץ לפי ימים', status:'done' },
+        { id:'c5', req:"'התחל ביקור' ← סטטוס Active + רישום שעת התחלה", status:'done' },
+        { id:'c6', req:'סיום ביקור: סיכום ביקור + סטטוס סופי + ביטול עם סיבה', status:'done' },
+        { id:'c7', req:'לקוח חותם על טאבלט לאישור ביצוע', status:'done' },
+        { id:'c8', req:'יצירת תעודת משלוח מהביקור: בחירת פריטים + מספרים סידוריים', status:'postponed', note:'ממתין לאינטגרציית OneView — קיים בצורה חלקית' },
+        { id:'c9', req:'הצגת פריטים מותקנים אצל הלקוח + החלפת פריט', status:'postponed', note:'ממתין לאינטגרציית OneView' },
+      ]},
+      { title:'ניהול ציוד ומלאי', items:[
+        { id:'c10', req:'שליחת תעודת משלוח → עדכון מלאי אוטומטי ב-OneView', status:'postponed', note:'פונקציה בנויה — ממתין ל-OneView' },
+        { id:'c11', req:'טכנאי רואה מלאי ברכב שלו בזמן אמת', status:'postponed', note:'ממתין לאינטגרציית OneView' },
+        { id:'c12', req:'עדכון ציוד מותקן אצל לקוח ביצירת תעודה', status:'postponed', note:'Workflows קיימים — הלוגיקה הסופית ממתינה ל-OneView' },
+      ]},
+      { title:'סגירה ומשוב', items:[
+        { id:'c13', req:'סיום ביקור ← קריאת שירות מתעדכנת אוטומטית', status:'done' },
+        { id:'c14', req:'סקר שביעות רצון נשלח ללקוח לאחר ביקור', status:'pending', note:'ממתין להחלטה על נוסח + ערוץ' },
+      ]},
+      { title:'פרויקטים מורכבים', items:[
+        { id:'c15', req:'עסקאות Enterprise מנוהלות כפרויקט עם אבני דרך ומשימות', status:'done' },
+        { id:'c16', req:'משימות פרויקט דינמיות לפי מוצרים שנרכשו', status:'notinspec', note:'הועלה כתוספת בפגישה 8/6 — נווה הסביר שחורג מהאפיון המקורי. נדרשת הערכת מחיר נפרדת.' },
+      ]},
+    ]
+  },
+  {
+    id:'d', letter:'ד', title:'פורטלי לקוחות',
+    source:'אפיון פונקציונאלי — פרק פורטלים לשירות עצמי',
+    subsections:[
+      { title:'פורטל לקוחות (CRM + Desk)',
+        headerStatus:'pending', headerNotInSpec:true,
+        headerNote:'ממתין לאפיון דרישות מדויק של הלקוח + אישור הערכת זמנים. פריטים מסוימים תלויים גם בהשלמת אינטגרציית OneView.',
+        items:[
+        { id:'d1', req:'לקוח רואה הזמנות שלו + סטטוס', status:'pending', notInSpec:true },
+        { id:'d2', req:'לקוח רואה ציוד שנמצא אצלו + מספרים סידוריים', status:'postponed', notInSpec:true },
+        { id:'d3', req:'לקוח רואה קטלוג מוצרים לצורך בקשת רכישה', status:'pending', notInSpec:true },
+        { id:'d4', req:'לקוח פותח ועוקב אחר קריאות שירות', status:'pending', notInSpec:true },
+        { id:'d5', req:'לקוח רואה רק מוצרים שלו ופותח קריאה עליהם', status:'pending', notInSpec:true },
+        { id:'d6', req:'ממשק פורטל בעברית', status:'pending', notInSpec:true },
+        { id:'d7', req:'לוגיקת פורטל לפי סוג לקוח (תוכנה / חומרה / משולב)', status:'pending', notInSpec:true },
+      ]},
+    ]
+  },
+  {
+    id:'e', letter:'ה', title:'אינטגרציות',
+    source:'אפיון פונקציונאלי — פרק ארכיטקטורה ואינטגרציות',
+    subsections:[
+      { title:'OneView — ERP',
+        notice:'כל אינטגרציות OneView נדחו לשלב מאוחר יותר. התשתיות, הפונקציות והאוטומציות בנויים ומחכים לאינטגרציה.',
+        noticeType:'blue',
+        items:[
+          { id:'e1', req:'הקמה / עדכון לקוח ב-OneView עם סגירת עסקה', status:'postponed' },
+          { id:'e2', req:'שידור הזמנה ל-OneView', status:'postponed' },
+          { id:'e3', req:'גריעת מלאי ב-OneView עם שליחת תעודת משלוח', status:'postponed' },
+          { id:'e4', req:'סנכרון חשבוניות מ-OneView לתיק הלקוח', status:'postponed' },
+          { id:'e5', req:'עדכון סטטוס חוזה שירות מ-OneView', status:'postponed' },
+          { id:'e6', req:'יתרת חוב ואובליגו — מעודכן יומי מ-OneView', status:'postponed', note:'Sync Debt Balance Workflow קיים ב-CRM — ממתין ל-API' },
+          { id:'e7', req:'בדיקת מלאי בזמן יצירת הצעת מחיר', status:'postponed' },
+          { id:'e8', req:'אינטגרציה עם Priority', status:'postponed', notInSpec:true, note:'לא באפיון — הוחלט לאפיון נפרד (פגישה 8/6)' },
+        ]
+      },
+      { title:'סליקה', items:[
+        { id:'e9', req:'יצירת קישור תשלום ייחודי + שליחה ללקוח', status:'pending', note:'קיים כפונקציה — ממתין לספק סליקה' },
+        { id:'e10', req:"קבלת אישור תשלום ← עדכון הזמנה ל'שולם'", status:'pending', note:'ממתין לספק סליקה' },
+      ]},
+      { title:'טלפוניה', items:[
+        { id:'e11', req:'אינטגרציית טלפוניה', status:'pending', note:'ממתין להחלטת הלקוח על ספק ופתרון' },
+      ]},
+      { title:'WhatsApp', items:[
+        { id:'e12', req:'אינטגרציית WhatsApp לתקשורת עם לקוחות', status:'pending', note:'ממתין לחיבור המספר ואישור הלקוח' },
+      ]},
+    ]
+  },
+  {
+    id:'f', letter:'ו', title:'דוחות ודשבורדים',
+    source:'אפיון פונקציונאלי',
+    subsections:[
+      { title:'דשבורדים ודוחות', items:[
+        { id:'f1', req:'דשבורד מנהל: KPIs מכירות, שירות ותפעול', status:'pending', note:'נשלחה הצעה למבנה — ממתינים לאישור הלקוח' },
+        { id:'f2', req:'דוחות: pipeline, SLA, ניצולת טכנאים, CSAT, חוזים שפגים', status:'pending', note:'ממתין לאישור הלקוח' },
+        { id:'f3', req:'דוחות שבועיים אוטומטיים למנהלים', status:'pending', note:'ממתין לאישור הלקוח' },
+      ]},
+    ]
+  },
+];
+
+const questions = [
+  {
+    id:'qp', title:'פורטל לקוחות (פרוטוטייפ שאשר שלח)',
+    items:[
+      { id:'qp1', text:'פתיחת קריאה — מאוד מוכוונת מוצרים. איך פותחים קריאה על תוכנה? האופציה ליצירת קריאה המוצגת פה היא זו שנבחרה מתוך שלושת האופציות שהצגנו?' },
+      { id:'qp2', text:'הוסר הפילטר הראשוני של פתיחת קריאה לפי מיקום — יש לקוחות עם עשרות מוצרים מותקנים; ממשק ללא היררכיה לא יהיה נוח. האם להשאיר את הפילטר?' },
+      { id:'qp3', text:'במסך פתיחת הקריאה — החלק של "כך זה נקלט בדסק" — מה זה אומר ללקוח? האם זה רלוונטי עבורו?' },
+      { id:'qp4', text:'מאיפה יגיע המידע ל"חידושים ומוצרים שטרם רכשתי"?' },
+      { id:'qp5', text:'התכתבות עם התמיכה בתוך פנייה — צריך לבדוק אם אפשרי ומה הסיבוכיות הטכנית. האם נדרש?' },
+    ]
+  },
+  {
+    id:'qc', title:'מערכת CRM — מודולים לסיום אפיון',
+    items:[
+      { id:'qc1', text:'אילו מודולים ותהליכים נרצה להשמיש בשלב הבא? חוזי שירות / מוצרים מותקנים אצל לקוח / הזמנות — לא סיימנו לאפיין את ההבדל בין הזמנה חדשה להזמנת תיקון.' },
+    ]
+  },
+  {
+    id:'qzp', title:'Zoho Projects (תוספות לאינטגרציה המובנית)',
+    items:[
+      { id:'qzp1', text:'האפיון שנשלח מסורבל ולא מאוד ברור. צריך לקבוע שיחה ייעודית לנושא Zoho Projects. הגישה המומלצת: להתחיל עם טמפלייטים פשוטים ולעבות אותם כשמבינים את שיטת העבודה.' },
+    ]
+  },
+];
+
+// ──────────────────────────────────────────────
+// RENDER
+// ──────────────────────────────────────────────
+
+let allItems = [];
+
+function statusBadge(status, notInSpec) {
+  const s = STATUS[status] || STATUS.done;
+  let html = `<div class="sb-stack">`;
+  html += `<span class="sb ${s.cls}">${s.icon} ${s.label}</span>`;
+  if (notInSpec) {
+    html += `<span class="sb s-spec">★ לא באפיון</span>`;
+    if (status === 'pending') {
+      html += `<div class="price-tag">★ נדרשת הערכת מחיר נפרדת</div>`;
+    }
+  }
+  html += `</div>`;
+  return html;
+}
+
+function renderSections() {
+  const con = document.getElementById('sections-container');
+  let html = '';
+
+  sections.forEach(sec => {
+    // count stats for this section
+    let counts = { done:0, pending:0, postponed:0, partial:0, notinspec:0 };
+    sec.subsections.forEach(sub => sub.items.forEach(item => {
+      counts[item.status] = (counts[item.status]||0) + 1;
+      if (item.notInSpec) counts.notinspec = (counts.notinspec||0) + 1;
+    }));
+
+    let chipsHtml = '';
+    if (counts.done)      chipsHtml += `<span class="sch sch-done">✓ ${counts.done}</span>`;
+    if (counts.pending)   chipsHtml += `<span class="sch sch-pend">⏳ ${counts.pending}</span>`;
+    if (counts.postponed) chipsHtml += `<span class="sch sch-post">⏸ ${counts.postponed}</span>`;
+    if (counts.partial)   chipsHtml += `<span class="sch sch-part">◑ ${counts.partial}</span>`;
+    if (counts.notinspec) chipsHtml += `<span class="sch sch-spec">★ ${counts.notinspec}</span>`;
+
+    html += `<div class="sc" id="sec-${sec.id}">`;
+    html += `<div class="sh" onclick="toggleSection('${sec.id}')">`;
+    html += `<div class="sh-bg-letter">${sec.letter}</div>`;
+    html += `<div class="sh-badge">${sec.letter}</div>`;
+    html += `<div class="sh-info"><div class="sh-name">${sec.title}</div><div class="sh-source">${sec.source}</div></div>`;
+    html += `<div class="sh-chips">${chipsHtml}</div>`;
+    html += `<div class="sh-tog" id="tog-${sec.id}">▼</div>`;
+    html += `</div>`;
+
+    html += `<div class="sb-body" id="body-${sec.id}">`;
+
+    if (sec.notice) {
+      html += `<div class="notice"><div class="notice-icon">⚠</div><div><strong>שימו לב:</strong> ${sec.notice}</div></div>`;
+    }
+
+    sec.subsections.forEach(sub => {
+      html += `<div class="subsection">`;
+      if (sub.notice) {
+        const nc = sub.noticeType === 'blue' ? 'notice blue' : 'notice';
+        html += `<div class="${nc}"><div class="notice-icon">${sub.noticeType==='blue'?'ℹ':'⚠'}</div><div>${sub.notice}</div></div>`;
+      }
+      const noStCols = !!sub.headerStatus;
+      let subhBadges = '';
+      if (noStCols) {
+        const hs = STATUS[sub.headerStatus];
+        subhBadges = `<div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+          <span class="sb ${hs.cls}">${hs.icon} ${hs.label}</span>
+          ${sub.headerNotInSpec ? '<span class="sb s-spec">★ לא באפיון — נדרשת הערכת מחיר נפרדת</span>' : ''}
+        </div>`;
+      }
+      html += `<div class="subh" style="display:flex;align-items:center;justify-content:space-between;gap:12px">${sub.title}${subhBadges}</div>`;
+      if (sub.headerNote) html += `<div class="notice"><div class="notice-icon">📋</div><div>${sub.headerNote}</div></div>`;
+      html += `<table class="rt">`;
+      html += `<thead><tr>
+        <th class="col-n">#</th>
+        <th>דרישה פונקציונאלית</th>
+        ${noStCols ? '' : '<th style="width:165px">סטטוס</th>'}
+        ${noStCols ? '' : '<th style="min-width:150px">הערות Wand</th>'}
+        <th class="th-c" style="width:140px">בודק מטעם זמן אמת</th>
+        <th class="th-c" style="width:58px;text-align:center">אישור</th>
+        <th class="th-c" style="width:175px">הערות זמן אמת</th>
+      </tr></thead><tbody>`;
+
+      sub.items.forEach((item, idx) => {
+        const statusKey = item.status + (item.notInSpec ? '+notinspec' : '');
+        allItems.push({ id: item.id, status: item.status, notInSpec: !!item.notInSpec });
+        const rowCls = `row-${item.status}${item.notInSpec ? ' row-notinspec' : ''}`;
+        html += `<tr class="${rowCls}" data-status="${item.status}" data-notinspec="${!!item.notInSpec}" data-id="${item.id}">`;
+        html += `<td class="col-n">${idx+1}</td>`;
+        html += `<td>${item.req}</td>`;
+        if (!noStCols) {
+          html += `<td>${statusBadge(item.status, item.notInSpec)}</td>`;
+          html += `<td><span class="wn">${item.note||''}</span></td>`;
+        }
+        const showReview = item.status === 'done' || item.status === 'partial';
+        if (showReview) {
+          html += `<td class="td-c"><input class="inp-r" type="text" placeholder="שם הבודק" data-field="reviewer" data-id="${item.id}" onchange="markUnsaved()"></td>`;
+          html += `<td class="td-c" style="text-align:center"><input class="chk" type="checkbox" data-field="approved" data-id="${item.id}" onchange="markUnsaved()"></td>`;
+        } else {
+          html += `<td class="td-c" style="color:#94a3b8;font-size:11px;text-align:center">—</td>`;
+          html += `<td class="td-c" style="color:#94a3b8;font-size:11px;text-align:center">—</td>`;
+        }
+        html += `<td class="td-c"><textarea class="inp-n" placeholder="הערות..." data-field="notes" data-id="${item.id}" onchange="markUnsaved()"></textarea></td>`;
+        html += `</tr>`;
+      });
+
+      html += `</tbody></table></div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  con.innerHTML = html;
+}
+
+function renderQuestions() {
+  const con = document.getElementById('questions-container');
+  let html = '';
+  questions.forEach(qg => {
+    html += `<div class="qg">`;
+    html += `<div class="qg-title">${qg.title}</div>`;
+    qg.items.forEach((q, i) => {
+      html += `<div class="qi">`;
+      html += `<div class="qt"><span class="qn">${i+1}</span><span>${q.text}</span></div>`;
+      html += `<label class="ans-lbl" for="ans-${q.id}">תשובת זמן אמת</label>`;
+      html += `<textarea class="ans" id="ans-${q.id}" data-field="qanswer" data-id="${q.id}" placeholder="כתבו כאן את תשובתכם..." onchange="markUnsaved()"></textarea>`;
+      html += `</div>`;
+    });
+    html += `</div>`;
+  });
+  con.innerHTML = html;
+}
+
+// ──────────────────────────────────────────────
+// STATS
+// ──────────────────────────────────────────────
+
+function computeStats() {
+  let s = { done:0, pending:0, postponed:0, partial:0, notinspec:0, total:0 };
+  allItems.forEach(item => {
+    s[item.status] = (s[item.status]||0) + 1;
+    if (item.notInSpec) s.notinspec++;
+    s.total++;
+  });
+  return s;
+}
+
+function renderStats() {
+  const st = computeStats();
+  const con = document.getElementById('ph-stats');
+  const defs = [
+    { key:'done',      dot:'#22c55e', label:`✓ בוצע`, count: st.done },
+    { key:'pending',   dot:'#f59e0b', label:`⏳ ממתין ללקוח`, count: st.pending },
+    { key:'postponed', dot:'#94a3b8', label:`⏸ נדחה`, count: st.postponed },
+    { key:'partial',   dot:'#f97316', label:`◑ חלקי`, count: st.partial },
+    { key:'notinspec', dot:'#a78bfa', label:`★ לא באפיון`, count: st.notinspec },
+  ];
+  con.innerHTML = defs.map(d =>
+    `<div class="hst" onclick="setFilter('${d.key}',this)" data-key="${d.key}">
+      <span class="hst-dot" style="background:${d.dot}"></span>${d.label} <strong>${d.count}</strong>
+    </div>`
+  ).join('') + `<div class="hst" style="cursor:default;opacity:.6">סה"כ <strong>${st.total}</strong></div>`;
+}
+
+// ──────────────────────────────────────────────
+// FILTER
+// ──────────────────────────────────────────────
+
+let currentFilter = 'all';
+
+function setFilter(key, btn) {
+  currentFilter = key;
+  document.querySelectorAll('.fbtn, .hst[data-key]').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll(`.fbtn`).forEach(b => { if(b.textContent.includes('הכל') && key==='all') b.classList.add('active'); });
+  if (btn) btn.classList.add('active');
+  if (key !== 'all') {
+    document.querySelectorAll('.hst[data-key="'+key+'"]').forEach(b => b.classList.add('active'));
+  }
+  document.querySelectorAll('.rt tbody tr').forEach(row => {
+    if (key === 'all') { row.classList.remove('row-hidden'); return; }
+    const rs = row.dataset.status;
+    const rni = row.dataset.notinspec === 'true';
+    const match = rs === key || (key === 'notinspec' && rni);
+    row.classList.toggle('row-hidden', !match);
+  });
+}
+
+// ──────────────────────────────────────────────
+// TOGGLE SECTIONS
+// ──────────────────────────────────────────────
+
+function toggleSection(id) {
+  const body = document.getElementById('body-' + id);
+  const tog = document.getElementById('tog-' + id);
+  body.classList.toggle('is-col');
+  tog.classList.toggle('col');
+}
+
+// ──────────────────────────────────────────────
+// SAVE / LOAD
+// ──────────────────────────────────────────────
+
+const STORAGE_KEY = 'zman-emet-review-v1';
+
+function collectData() {
+  const data = {};
+  document.querySelectorAll('[data-field][data-id]').forEach(el => {
+    const id = el.dataset.id;
+    const field = el.dataset.field;
+    if (!data[id]) data[id] = {};
+    data[id][field] = el.type === 'checkbox' ? el.checked : el.value;
+  });
+  return data;
+}
+
+function saveData() {
+  const data = collectData();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  const el = document.getElementById('save-st');
+  el.textContent = 'נשמר בהצלחה ✓';
+  el.classList.add('ok');
+  setTimeout(() => { el.textContent = 'שינויים נשמרו'; }, 3000);
+}
+
+function loadData() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    Object.entries(data).forEach(([id, fields]) => {
+      Object.entries(fields).forEach(([field, val]) => {
+        const el = document.querySelector(`[data-field="${field}"][data-id="${id}"]`);
+        if (!el) return;
+        if (el.type === 'checkbox') el.checked = val;
+        else el.value = val;
+      });
+    });
+    const el = document.getElementById('save-st');
+    el.textContent = 'נטענו נתונים שמורים';
+    el.classList.add('ok');
+    setTimeout(() => { el.textContent = 'שינויים נשמרו'; }, 3000);
+  } catch(e) {}
+}
+
+function markUnsaved() {
+  const el = document.getElementById('save-st');
+  el.textContent = 'יש שינויים שלא נשמרו';
+  el.classList.remove('ok');
+}
+
+// ──────────────────────────────────────────────
+// INIT
+// ──────────────────────────────────────────────
+
+renderSections();
+renderQuestions();
+renderStats();
+loadData();
+
+// set "הכל" as active on init
+document.querySelector('.fbtn').classList.add('active');
+</script>
