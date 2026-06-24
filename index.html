@@ -596,6 +596,12 @@ function toggleSection(id) {
 // SAVE / LOAD
 // ──────────────────────────────────────────────
 
+// ── SUPABASE CONFIG ──────────────────────────────────────────
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';   // https://xxxx.supabase.co
+const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SESSION_KEY  = 'zman-emet-review';
+// ─────────────────────────────────────────────────────────────
+
 const STORAGE_KEY = 'zman-emet-review-v1';
 
 function collectData() {
@@ -609,33 +615,72 @@ function collectData() {
   return data;
 }
 
-function saveData() {
-  const data = collectData();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  const el = document.getElementById('save-st');
-  el.textContent = 'נשמר בהצלחה ✓';
-  el.classList.add('ok');
-  setTimeout(() => { el.textContent = 'שינויים נשמרו'; }, 3000);
+function applyData(data) {
+  Object.entries(data).forEach(([id, fields]) => {
+    Object.entries(fields).forEach(([field, val]) => {
+      const el = document.querySelector(`[data-field="${field}"][data-id="${id}"]`);
+      if (!el) return;
+      if (el.type === 'checkbox') el.checked = val;
+      else el.value = val;
+    });
+  });
 }
 
-function loadData() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return;
+async function saveData() {
+  const data = collectData();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+  const el = document.getElementById('save-st');
+  el.textContent = 'שומר...';
+  el.classList.remove('ok');
+
   try {
-    const data = JSON.parse(raw);
-    Object.entries(data).forEach(([id, fields]) => {
-      Object.entries(fields).forEach(([field, val]) => {
-        const el = document.querySelector(`[data-field="${field}"][data-id="${id}"]`);
-        if (!el) return;
-        if (el.type === 'checkbox') el.checked = val;
-        else el.value = val;
-      });
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/form_responses`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({ session_id: SESSION_KEY, data })
     });
-    const el = document.getElementById('save-st');
-    el.textContent = 'נטענו נתונים שמורים';
-    el.classList.add('ok');
-    setTimeout(() => { el.textContent = 'שינויים נשמרו'; }, 3000);
-  } catch(e) {}
+    if (res.ok) {
+      el.textContent = 'נשמר בהצלחה ✓';
+      el.classList.add('ok');
+      setTimeout(() => { el.textContent = 'שינויים נשמרו'; el.classList.remove('ok'); }, 3000);
+    } else {
+      el.textContent = 'שגיאה בשמירה (' + res.status + ')';
+    }
+  } catch (e) {
+    el.textContent = 'שגיאת רשת — נשמר מקומית בלבד';
+  }
+}
+
+async function loadData() {
+  const el = document.getElementById('save-st');
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/form_responses?session_id=eq.${SESSION_KEY}&select=data&limit=1`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    );
+    if (res.ok) {
+      const rows = await res.json();
+      if (rows.length > 0 && rows[0].data) {
+        applyData(rows[0].data);
+        el.textContent = 'נטענו נתונים שמורים ✓';
+        el.classList.add('ok');
+        setTimeout(() => { el.textContent = 'שינויים נשמרו'; el.classList.remove('ok'); }, 3000);
+        return;
+      }
+    }
+  } catch (e) {}
+
+  // fallback: localStorage
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    try { applyData(JSON.parse(raw)); } catch(e) {}
+  }
 }
 
 function markUnsaved() {
