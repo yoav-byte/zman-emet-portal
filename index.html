@@ -130,7 +130,23 @@ tr.row-hidden{display:none}
 .leg-items{display:flex;gap:12px;flex-wrap:wrap}
 .li{display:flex;align-items:center;gap:5px}
 
-@media print{.ph{position:relative}.fb{display:none}.ab{display:none}.legend{display:none}.rt th{position:relative;top:0}.inp-r,.inp-n,.ans{border:1px solid #ccc}}
+.print-header{display:none}
+@media print{
+  .ph,.fb,.ab,.legend,.filter-bar{display:none!important}
+  .print-header{display:block;padding:16px 0 12px;border-bottom:3px solid #1C2B3A;margin-bottom:20px}
+  .print-header h1{font-size:20px;font-weight:800;color:#1C2B3A}
+  .print-header p{font-size:12px;color:#64748B;margin-top:4px}
+  .rt th{position:relative;top:0;background:#f0f4f8!important}
+  .inp-r,.inp-n,.ans{border:1px solid #ccc;background:white}
+  .sc{break-inside:avoid;box-shadow:none;border:1px solid #ccc}
+  .sh{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .sh-bg-letter{display:none}
+  .td-c{background:#f0f7ff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .sb-body.is-col{display:block!important}
+  .sh-tog{display:none}
+  body{font-size:12px}
+  @page{margin:1.5cm;size:A4}
+}
 @media(max-width:900px){.main{padding:14px}.ph{padding:12px 14px}.fb{padding:8px 14px}}
 .sb-body.is-col{display:none}
 </style>
@@ -154,6 +170,11 @@ tr.row-hidden{display:none}
     <div class="li"><span class="sb s-part">◑ חלקי</span></div>
     <div class="li"><span class="sb s-spec">★ לא באפיון</span></div>
   </div>
+</div>
+
+<div class="print-header">
+  <h1>זמן אמת — מסמך מסירה שלב פיתוח א׳</h1>
+  <p id="print-date"></p>
 </div>
 
 <div class="fb">
@@ -181,8 +202,7 @@ tr.row-hidden{display:none}
 
   <div class="ab">
     <div style="display:flex;gap:10px">
-      <button class="btn btn-save" onclick="saveData()">שמור תשובות</button>
-      <button class="btn btn-print" onclick="window.print()">הדפס / PDF</button>
+      <button class="btn btn-save" onclick="saveData()">שמור ושלח ✓</button>
     </div>
     <span class="save-st" id="save-st">שינויים לא נשמרו</span>
   </div>
@@ -596,10 +616,8 @@ function toggleSection(id) {
 // SAVE / LOAD
 // ──────────────────────────────────────────────
 
-// ── SUPABASE CONFIG ──────────────────────────────────────────
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';   // https://xxxx.supabase.co
-const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
-const SESSION_KEY  = 'zman-emet-review';
+// ── GOOGLE SHEETS CONFIG ─────────────────────────────────────
+const APPS_SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL'; // https://script.google.com/macros/s/.../exec
 // ─────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = 'zman-emet-review-v1';
@@ -615,6 +633,31 @@ function collectData() {
   return data;
 }
 
+function collectRichData() {
+  const result = { savedAt: new Date().toISOString(), items: [], questions: [] };
+  sections.forEach(sec => {
+    sec.subsections.forEach(sub => {
+      sub.items.forEach(item => {
+        const reviewer = document.querySelector(`[data-field="reviewer"][data-id="${item.id}"]`)?.value || '';
+        const approved = document.querySelector(`[data-field="approved"][data-id="${item.id}"]`)?.checked || false;
+        const notes    = document.querySelector(`[data-field="notes"][data-id="${item.id}"]`)?.value || '';
+        result.items.push({
+          sectionTitle: sec.title, subsectionTitle: sub.title,
+          req: item.req, statusLabel: STATUS[item.status]?.label || item.status,
+          reviewer, approved, notes
+        });
+      });
+    });
+  });
+  questions.forEach(qg => {
+    qg.items.forEach(q => {
+      const answer = document.getElementById(`ans-${q.id}`)?.value || '';
+      result.questions.push({ group: qg.title, question: q.text, answer });
+    });
+  });
+  return result;
+}
+
 function applyData(data) {
   Object.entries(data).forEach(([id, fields]) => {
     Object.entries(fields).forEach(([field, val]) => {
@@ -626,61 +669,40 @@ function applyData(data) {
   });
 }
 
+function expandAllSections() {
+  sections.forEach(sec => {
+    const body = document.getElementById('body-' + sec.id);
+    const tog  = document.getElementById('tog-' + sec.id);
+    if (body) body.classList.remove('is-col');
+    if (tog)  tog.classList.remove('col');
+  });
+}
+
 async function saveData() {
-  const data = collectData();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  const richData = collectRichData();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(collectData()));
 
   const el = document.getElementById('save-st');
-  el.textContent = 'שומר...';
+  el.textContent = 'שולח...';
   el.classList.remove('ok');
 
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/form_responses`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates'
-      },
-      body: JSON.stringify({ session_id: SESSION_KEY, data })
-    });
-    if (res.ok) {
-      el.textContent = 'נשמר בהצלחה ✓';
-      el.classList.add('ok');
-      setTimeout(() => { el.textContent = 'שינויים נשמרו'; el.classList.remove('ok'); }, 3000);
-    } else {
-      el.textContent = 'שגיאה בשמירה (' + res.status + ')';
-    }
+    await fetch(APPS_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(richData) });
+    el.textContent = 'נשמר ונשלח ✓ — מכין PDF...';
+    el.classList.add('ok');
+    // expand all sections so nothing is hidden in the PDF
+    expandAllSections();
+    setTimeout(() => { window.print(); }, 700);
+    setTimeout(() => { el.textContent = 'נשמר ונשלח ✓'; }, 4000);
   } catch (e) {
-    el.textContent = 'שגיאת רשת — נשמר מקומית בלבד';
+    el.textContent = 'שגיאת שליחה — בדוק חיבור';
   }
 }
 
-async function loadData() {
-  const el = document.getElementById('save-st');
-  try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/form_responses?session_id=eq.${SESSION_KEY}&select=data&limit=1`,
-      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
-    );
-    if (res.ok) {
-      const rows = await res.json();
-      if (rows.length > 0 && rows[0].data) {
-        applyData(rows[0].data);
-        el.textContent = 'נטענו נתונים שמורים ✓';
-        el.classList.add('ok');
-        setTimeout(() => { el.textContent = 'שינויים נשמרו'; el.classList.remove('ok'); }, 3000);
-        return;
-      }
-    }
-  } catch (e) {}
-
-  // fallback: localStorage
+function loadData() {
   const raw = localStorage.getItem(STORAGE_KEY);
-  if (raw) {
-    try { applyData(JSON.parse(raw)); } catch(e) {}
-  }
+  if (!raw) return;
+  try { applyData(JSON.parse(raw)); } catch(e) {}
 }
 
 function markUnsaved() {
@@ -688,6 +710,13 @@ function markUnsaved() {
   el.textContent = 'יש שינויים שלא נשמרו';
   el.classList.remove('ok');
 }
+
+// set print date header
+window.onbeforeprint = () => {
+  expandAllSections();
+  const d = document.getElementById('print-date');
+  if (d) d.textContent = 'הופק: ' + new Date().toLocaleString('he-IL');
+};
 
 // ──────────────────────────────────────────────
 // INIT
