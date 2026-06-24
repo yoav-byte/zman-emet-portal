@@ -679,23 +679,31 @@ function expandAllSections() {
 }
 
 async function saveData() {
+  const data = collectData();
   const richData = collectRichData();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(collectData()));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 
   const el = document.getElementById('save-st');
   el.textContent = 'שולח...';
   el.classList.remove('ok');
 
   try {
+    await fetch('/api/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    // log to Sheets/email in background
     const slim = {
       savedAt: richData.savedAt,
       items: richData.items.filter(it => it.reviewer || it.approved || it.notes),
       questions: richData.questions.filter(q => q.answer)
     };
-    await fetch(APPS_SCRIPT_URL + '?d=' + encodeURIComponent(JSON.stringify(slim)), { mode: 'no-cors' });
+    fetch(APPS_SCRIPT_URL + '?d=' + encodeURIComponent(JSON.stringify(slim)), { mode: 'no-cors' }).catch(() => {});
+
     el.textContent = 'נשמר ונשלח ✓ — מכין PDF...';
     el.classList.add('ok');
-    // expand all sections so nothing is hidden in the PDF
     expandAllSections();
     setTimeout(() => { window.print(); }, 700);
     setTimeout(() => { el.textContent = 'נשמר ונשלח ✓'; }, 4000);
@@ -704,7 +712,15 @@ async function saveData() {
   }
 }
 
-function loadData() {
+async function loadData() {
+  try {
+    const res = await fetch('/api/data');
+    const serverData = await res.json();
+    if (serverData && Object.keys(serverData).length > 0) {
+      applyData(serverData);
+      return;
+    }
+  } catch(e) {}
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return;
   try { applyData(JSON.parse(raw)); } catch(e) {}
