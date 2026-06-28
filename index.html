@@ -93,7 +93,7 @@ tr.row-hidden{display:none}
 /* FORM INPUTS */
 .inp-r,.inp-n{width:100%;border:1px solid var(--client-border);border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;background:white;color:var(--text);transition:border-color .15s,box-shadow .15s;direction:rtl}
 .inp-r:focus,.inp-n:focus{outline:none;border-color:var(--accent2);box-shadow:0 0 0 2px rgba(45,95,138,.1)}
-.inp-n{resize:vertical;min-height:50px}
+.inp-n{resize:none;min-height:50px;overflow:hidden}
 .chk{width:17px;height:17px;cursor:pointer;accent-color:var(--done-fg)}
 
 /* WAND NOTE */
@@ -114,7 +114,7 @@ tr.row-hidden{display:none}
 .qt{font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;line-height:1.5;display:flex;align-items:flex-start;gap:7px}
 .qn{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;min-width:19px;background:#7C3AED;color:white;border-radius:50%;font-size:10px;font-weight:800;margin-top:2px}
 .ans-lbl{font-size:10px;font-weight:800;color:#7C3AED;margin-bottom:4px;display:block;text-transform:uppercase;letter-spacing:.5px}
-.ans{width:100%;border:1px solid #DDD6FE;border-radius:6px;padding:7px 11px;font-size:13px;font-family:inherit;color:var(--text);background:white;resize:vertical;min-height:68px;transition:border-color .15s,box-shadow .15s;direction:rtl}
+.ans{width:100%;border:1px solid #DDD6FE;border-radius:6px;padding:7px 11px;font-size:13px;font-family:inherit;color:var(--text);background:white;resize:none;min-height:68px;overflow:hidden;transition:border-color .15s,box-shadow .15s;direction:rtl}
 .ans:focus{outline:none;border-color:#7C3AED;box-shadow:0 0 0 2px rgba(124,58,237,.1)}
 
 /* ACTION BAR */
@@ -728,7 +728,7 @@ async function loadData() {
 }
 
 function autoResize(el) {
-  el.style.height = 'auto';
+  el.style.height = '0';
   el.style.height = el.scrollHeight + 'px';
 }
 
@@ -742,11 +742,27 @@ function markUnsaved() {
   el.classList.remove('ok');
 }
 
-// set print date header
+// set print date header + swap textareas → divs so full content prints
 window.onbeforeprint = () => {
   expandAllSections();
+  document.querySelectorAll('textarea').forEach(ta => {
+    const div = document.createElement('div');
+    div.className = ta.className;
+    div.style.whiteSpace = 'pre-wrap';
+    div.style.wordBreak = 'break-word';
+    div.style.minHeight = '0';
+    div.textContent = ta.value;
+    div.dataset.printDiv = '1';
+    ta.style.display = 'none';
+    ta.after(div);
+  });
   const d = document.getElementById('print-date');
   if (d) d.textContent = 'הופק: ' + new Date().toLocaleString('he-IL');
+};
+
+window.onafterprint = () => {
+  document.querySelectorAll('[data-print-div]').forEach(el => el.remove());
+  document.querySelectorAll('textarea').forEach(ta => { ta.style.display = ''; });
 };
 
 // ──────────────────────────────────────────────
