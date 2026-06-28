@@ -4,6 +4,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json({ limit: '2mb' }));
+
+app.get('/v2', (req, res) => {
+  res.sendFile(path.join(__dirname, 'v2.html'));
+});
+
 app.use(express.static(path.join(__dirname)));
 
 let sharedData = {};
