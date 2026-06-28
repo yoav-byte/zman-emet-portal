@@ -172,7 +172,9 @@ tr.row-hidden{display:none}
 .guide-val { color: #1E3A5F; }
 .guide-btn { background: none; border: 1px solid #CBD5E1; border-radius: 4px; padding: 2px 6px; cursor: pointer; font-size: 11px; color: #64748B; line-height: 1.4; }
 .guide-btn:hover { background: #F0F4F8; }
-.td-guide, .th-guide { width: 44px; min-width: 44px; max-width: 44px; text-align: center !important; padding: 4px 2px !important; }
+.req-cell { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.req-cell span { flex: 1; }
+.req-cell .guide-btn { flex-shrink: 0; margin-top: 1px; }
 
 /* V2 BADGE */
 .v2-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(109,40,217,.25); border: 1px solid rgba(109,40,217,.4); border-radius: 12px; padding: 2px 9px; font-size: 11px; font-weight: 700; color: #c4b5fd; margin-right: 8px; }
@@ -190,16 +192,6 @@ tr.row-hidden{display:none}
   </div>
 </div>
 
-<div class="legend">
-  <span class="leg-lbl">סימון:</span>
-  <div class="leg-items">
-    <div class="li"><span class="sb s-done">✓ בוצע</span></div>
-    <div class="li"><span class="sb s-pend">⏳ ממתין ללקוח</span></div>
-    <div class="li"><span class="sb s-post">⏸ הוחלט לדחות</span></div>
-    <div class="li"><span class="sb s-part">◑ חלקי</span></div>
-    <div class="li"><span class="sb s-spec">★ לא באפיון</span></div>
-  </div>
-</div>
 
 <div class="print-header">
   <h1>זמן אמת — מסמך מסירה שלב פיתוח א׳</h1>
@@ -640,7 +632,6 @@ function renderSections() {
 
       html += `<thead><tr>
         <th class="col-n">#</th>
-        <th class="th-guide" style="">📋</th>
         <th>דרישה פונקציונאלית</th>
         ${noStCols ? '' : '<th style="width:165px">סטטוס</th>'}
         ${noStCols ? '' : '<th style="min-width:150px">הערות Wand</th>'}
@@ -654,8 +645,7 @@ function renderSections() {
         const rowCls = `row-${item.status}${item.notInSpec ? ' row-notinspec' : ''}`;
         html += `<tr class="${rowCls}" data-status="${item.status}" data-notinspec="${!!item.notInSpec}" data-id="${item.id}">`;
         html += `<td class="col-n">${idx+1}</td>`;
-        html += `<td class="td-guide"><button class="guide-btn" onclick="toggleGuide('${item.id}')">📋</button></td>`;
-        html += `<td>${item.req}</td>`;
+        html += `<td><div class="req-cell"><span>${item.req}</span><button class="guide-btn" onclick="toggleGuide('${item.id}')">📋</button></div></td>`;
         if (!noStCols) {
           html += `<td>${statusBadge(item.status, item.notInSpec)}</td>`;
           html += `<td><span class="wn">${item.note||''}</span></td>`;
