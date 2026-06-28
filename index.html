@@ -138,6 +138,8 @@ tr.row-hidden{display:none}
   .print-header p{font-size:12px;color:#64748B;margin-top:4px}
   .rt th{position:relative;top:0;background:#f0f4f8!important}
   .inp-r,.inp-n,.ans{border:1px solid #ccc;background:white;height:auto;overflow:visible}
+  textarea{display:none!important}
+  .print-mirror{display:block!important;white-space:pre-wrap;word-break:break-word;min-height:0}
   .sc{break-inside:avoid;box-shadow:none;border:1px solid #ccc}
   .sh{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .sh-bg-letter{display:none}
@@ -516,7 +518,7 @@ function renderSections() {
           html += `<td class="td-c" style="color:#94a3b8;font-size:11px;text-align:center">—</td>`;
           html += `<td class="td-c" style="color:#94a3b8;font-size:11px;text-align:center">—</td>`;
         }
-        html += `<td class="td-c"><textarea class="inp-n" placeholder="הערות..." data-field="notes" data-id="${item.id}" oninput="autoResize(this)" onchange="markUnsaved()"></textarea></td>`;
+        html += `<td class="td-c"><textarea class="inp-n" placeholder="הערות..." data-field="notes" data-id="${item.id}" oninput="autoResize(this);syncMirror(this)" onchange="markUnsaved()"></textarea><div class="inp-n print-mirror"></div></td>`;
         html += `</tr>`;
       });
 
@@ -539,7 +541,7 @@ function renderQuestions() {
       html += `<div class="qi">`;
       html += `<div class="qt"><span class="qn">${i+1}</span><span>${q.text}</span></div>`;
       html += `<label class="ans-lbl" for="ans-${q.id}">תשובת זמן אמת</label>`;
-      html += `<textarea class="ans" id="ans-${q.id}" data-field="qanswer" data-id="${q.id}" placeholder="כתבו כאן את תשובתכם..." oninput="autoResize(this)" onchange="markUnsaved()"></textarea>`;
+      html += `<textarea class="ans" id="ans-${q.id}" data-field="qanswer" data-id="${q.id}" placeholder="כתבו כאן את תשובתכם..." oninput="autoResize(this);syncMirror(this)" onchange="markUnsaved()"></textarea><div class="ans print-mirror"></div>`;
       html += `</div>`;
     });
     html += `</div>`;
@@ -719,12 +721,13 @@ async function loadData() {
     if (serverData && Object.keys(serverData).length > 0) {
       applyData(serverData);
       autoResizeAll();
+      syncAllMirrors();
       return;
     }
   } catch(e) {}
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return;
-  try { applyData(JSON.parse(raw)); autoResizeAll(); } catch(e) {}
+  try { applyData(JSON.parse(raw)); autoResizeAll(); syncAllMirrors(); } catch(e) {}
 }
 
 function autoResize(el) {
@@ -736,33 +739,28 @@ function autoResizeAll() {
   document.querySelectorAll('textarea').forEach(autoResize);
 }
 
+function syncMirror(ta) {
+  const mirror = ta.nextElementSibling;
+  if (mirror && mirror.classList.contains('print-mirror')) {
+    mirror.textContent = ta.value;
+  }
+}
+
+function syncAllMirrors() {
+  document.querySelectorAll('textarea').forEach(syncMirror);
+}
+
 function markUnsaved() {
   const el = document.getElementById('save-st');
   el.textContent = 'יש שינויים שלא נשמרו';
   el.classList.remove('ok');
 }
 
-// set print date header + swap textareas → divs so full content prints
 window.onbeforeprint = () => {
   expandAllSections();
-  document.querySelectorAll('textarea').forEach(ta => {
-    const div = document.createElement('div');
-    div.className = ta.className;
-    div.style.whiteSpace = 'pre-wrap';
-    div.style.wordBreak = 'break-word';
-    div.style.minHeight = '0';
-    div.textContent = ta.value;
-    div.dataset.printDiv = '1';
-    ta.style.display = 'none';
-    ta.after(div);
-  });
+  syncAllMirrors();
   const d = document.getElementById('print-date');
   if (d) d.textContent = 'הופק: ' + new Date().toLocaleString('he-IL');
-};
-
-window.onafterprint = () => {
-  document.querySelectorAll('[data-print-div]').forEach(el => el.remove());
-  document.querySelectorAll('textarea').forEach(ta => { ta.style.display = ''; });
 };
 
 // ──────────────────────────────────────────────
