@@ -172,7 +172,7 @@ tr.row-hidden{display:none}
 .guide-val { color: #1E3A5F; }
 .guide-btn { background: none; border: 1px solid #CBD5E1; border-radius: 4px; padding: 2px 6px; cursor: pointer; font-size: 11px; color: #64748B; line-height: 1.4; }
 .guide-btn:hover { background: #F0F4F8; }
-.td-guide { width: 36px; text-align: center; }
+.td-guide, .th-guide { width: 44px; min-width: 44px; max-width: 44px; text-align: center !important; padding: 4px 2px !important; }
 
 /* V2 BADGE */
 .v2-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(109,40,217,.25); border: 1px solid rgba(109,40,217,.4); border-radius: 12px; padding: 2px 9px; font-size: 11px; font-weight: 700; color: #c4b5fd; margin-right: 8px; }
@@ -640,7 +640,7 @@ function renderSections() {
 
       html += `<thead><tr>
         <th class="col-n">#</th>
-        <th class="td-guide th-guide" style="width:36px;text-align:center">בדיקה</th>
+        <th class="th-guide" style="">📋</th>
         <th>דרישה פונקציונאלית</th>
         ${noStCols ? '' : '<th style="width:165px">סטטוס</th>'}
         ${noStCols ? '' : '<th style="min-width:150px">הערות Wand</th>'}
