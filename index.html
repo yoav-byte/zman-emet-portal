@@ -94,6 +94,7 @@ tr.row-hidden{display:none}
 .inp-r,.inp-n{width:100%;border:1px solid var(--client-border);border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;background:white;color:var(--text);transition:border-color .15s,box-shadow .15s;direction:rtl}
 .inp-r:focus,.inp-n:focus{outline:none;border-color:var(--accent2);box-shadow:0 0 0 2px rgba(45,95,138,.1)}
 .inp-n{resize:none;min-height:50px;overflow:hidden}
+.print-mirror{display:none}
 .chk{width:17px;height:17px;cursor:pointer;accent-color:var(--done-fg)}
 
 /* WAND NOTE */
@@ -707,6 +708,7 @@ async function saveData() {
     el.textContent = 'נשמר ונשלח ✓ — מכין PDF...';
     el.classList.add('ok');
     expandAllSections();
+    syncAllMirrors();
     setTimeout(() => { window.print(); }, 700);
     setTimeout(() => { el.textContent = 'נשמר ונשלח ✓'; }, 4000);
   } catch (e) {
