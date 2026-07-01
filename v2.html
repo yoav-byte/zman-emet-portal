@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
+<!-- Wand: סטטוס ״לא רלוונטי״ הורד ע״י זמן-אמת -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>זמן אמת — מסמך מסירה שלב פיתוח א׳ — גרסה 2 — כולל מדריכי בדיקה</title>
@@ -170,14 +171,34 @@ tr.row-hidden{display:none}
 .guide-step { display: flex; gap: 8px; align-items: baseline; }
 .guide-lbl { font-weight: 700; color: #1E40AF; white-space: nowrap; }
 .guide-val { color: #1E3A5F; }
-.guide-btn { background: none; border: 1px solid #CBD5E1; border-radius: 4px; padding: 2px 6px; cursor: pointer; font-size: 11px; color: #64748B; line-height: 1.4; }
-.guide-btn:hover { background: #F0F4F8; }
+.guide-btn { background: rgba(109,40,217,.1); border: 1px solid rgba(109,40,217,.4); border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 11px; color: #6D28D9; font-weight: 800; line-height: 1.5; letter-spacing: .2px; }
+.guide-btn:hover { background: rgba(109,40,217,.2); }
 .req-cell { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
 .req-cell span { flex: 1; }
 .req-cell .guide-btn { flex-shrink: 0; margin-top: 1px; }
 
 /* V2 BADGE */
 .v2-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(109,40,217,.25); border: 1px solid rgba(109,40,217,.4); border-radius: 12px; padding: 2px 9px; font-size: 11px; font-weight: 700; color: #c4b5fd; margin-right: 8px; }
+
+/* TABS */
+.tab-bar { background: white; border-bottom: 2px solid var(--border); padding: 0 28px; display: flex; gap: 2px; }
+.tab-btn { background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; padding: 10px 20px; font-size: 13px; font-weight: 700; font-family: inherit; color: var(--muted); cursor: pointer; transition: color .15s, border-color .15s; }
+.tab-btn.active { color: var(--text); border-bottom-color: var(--accent); }
+.tab-btn:hover { color: var(--text); }
+
+/* HISTORY PANEL */
+.history-panel { max-width: 860px; margin: 28px auto; padding: 0 28px 48px; }
+.hist-empty { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 15px; }
+.hist-entry { background: white; border-radius: 10px; border: 1px solid var(--border); padding: 16px 20px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.05); }
+.hist-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.hist-time { font-size: 13px; font-weight: 700; color: var(--text); }
+.hist-label { font-size: 11px; color: var(--muted); }
+.hist-first { font-size: 12px; color: var(--muted); font-style: italic; }
+.hist-changes { display: flex; flex-direction: column; gap: 6px; }
+.hist-change { display: flex; align-items: baseline; gap: 10px; font-size: 12px; border-top: 1px solid var(--border); padding-top: 6px; }
+.hist-id { font-size: 11px; font-weight: 800; background: var(--ground); border: 1px solid var(--border); padding: 1px 7px; border-radius: 4px; white-space: nowrap; color: var(--accent2); flex-shrink: 0; }
+.hist-what { color: var(--text); flex: 1; }
+.hist-no-change { font-size: 12px; color: var(--muted); font-style: italic; }
 </style>
 </head>
 <body>
@@ -185,8 +206,8 @@ tr.row-hidden{display:none}
 <div class="ph">
   <div class="ph-row">
     <div>
-      <div class="ph-title">זמן אמת — מסמך מסירה שלב פיתוח א׳ <span class="v2-badge">v2 — כולל מדריכי בדיקה</span></div>
-      <div class="ph-meta">הוכן ע"י Wand · 23.6.2026 · גרסה 2 — כולל מדריכי בדיקה · יש למלא את עמודות "זמן אמת" ולאשר בדיקה לכל פריט</div>
+      <div class="ph-title">זמן אמת — מסמך מסירה שלב פיתוח א׳</div>
+      <div class="ph-meta">הוכן ע"י Wand · יש למלא את עמודות "זמן אמת" ולאשר בדיקה לכל פריט</div>
     </div>
     <div class="ph-stats" id="ph-stats"></div>
   </div>
@@ -198,15 +219,17 @@ tr.row-hidden{display:none}
   <p id="print-date"></p>
 </div>
 
-<div class="fb">
-  <span class="fb-lbl">סנן לפי סטטוס</span>
-  <button class="fbtn active" onclick="setFilter('all',this)">הכל</button>
-  <button class="fbtn" onclick="setFilter('done',this)">בוצע</button>
-  <button class="fbtn" onclick="setFilter('pending',this)">ממתין ללקוח</button>
-  <button class="fbtn" onclick="setFilter('postponed',this)">הוחלט לדחות</button>
-  <button class="fbtn" onclick="setFilter('notinspec',this)">לא באפיון</button>
+
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab-doc" onclick="switchTab('doc')">מסמך מסירה</button>
+  <button class="tab-btn" id="tab-hist" onclick="switchTab('history')">היסטוריית שינויים</button>
 </div>
 
+<div id="history-panel" class="history-panel" style="display:none">
+  <div id="history-list"><div class="hist-empty">טוען...</div></div>
+</div>
+
+<div id="doc-panel">
 <div class="main">
   <div id="sections-container"></div>
 
@@ -228,6 +251,7 @@ tr.row-hidden{display:none}
     <span class="save-st" id="save-st">שינויים לא נשמרו</span>
   </div>
 </div>
+</div><!-- /doc-panel -->
 
 <script>
 const STATUS = {
@@ -242,68 +266,68 @@ const STATUS = {
 // TESTING GUIDES
 // ──────────────────────────────────────────────
 const testGuides = {
-  'a1': { module: 'Zoho CRM → לידים', action: 'מלא את טופס יצירת הקשר באתר האינטרנט', data: 'שם + טלפון + מייל + הודעה', result: 'תוך דקה מופיע ליד חדש ב-CRM עם מקור "אתר"; מוקצה לנציג לפי כלל הניתוב' },
+  'a1': { module: 'Zoho CRM ← לידים', action: 'מלא את טופס יצירת הקשר באתר האינטרנט ושלח', data: 'שם + טלפון + מייל + הודעה', result: 'תוך דקה מופיע ליד חדש ב-CRM עם מקור "פנייה מהאתר" וסטטוס "חדש"; מוקצה לנציג לפי כלל הניתוב' },
   'a2': null,
-  'a3': { module: 'Zoho CRM → לידים', action: 'צור ליד חדש ומלא שדה "מספר עובדים" > 800, שמור', data: 'מספר עובדים: 900', result: 'הליד מוקצה לאשר אוטומטית' },
-  'a4': { module: 'Zoho CRM → לידים → ליד קיים', action: 'שנה סטטוס ל"לא רלוונטי" ונסה לשמור ללא מילוי שדה הסיבה', data: null, result: 'מוצגת שגיאת אימות "נדרשת סיבה"; לאחר מילוי הסיבה — שמירה מצליחה' },
-  'a5': { module: 'Zoho CRM → לידים → פתח ליד', action: 'לחץ "המר ליד"', data: null, result: 'נוצרים אוטומטית: לקוח, איש קשר ועסקה חדשים בלחיצה אחת' },
-  'a7': { module: 'Zoho CRM → עסקאות → פתח עסקה', action: 'עדכן שלב העסקה ב-Blueprint לפי הסדר', data: null, result: 'כל שלב דורש השלמת שדות חובה; לא ניתן לדלג על שלבים' },
-  'a8': { module: 'Zoho CRM → עסקאות → פתח עסקה', action: 'נסה לשנות שלב ל"הושלמה" ללא הזמנה מאושרת מקושרת', data: null, result: 'Blueprint חוסם את המעבר ומציג הודעת שגיאה' },
-  'a9': { module: 'Zoho CRM → עסקאות', action: 'השלם עסקה עם הזמנה מאושרת מקושרת', data: null, result: 'רשומת הלקוח המקושרת מתעדכנת לסטטוס "פעיל" אוטומטית' },
-  'a10': { module: 'Zoho CRM → עסקאות', action: 'השלם עסקה שכוללת מוצר חומרה בהצעת המחיר', data: null, result: 'נפתח טיקט חדש ב-Zoho Desk קטגוריית חומרה עם שם הלקוח ומספר העסקה' },
-  'a11': { module: 'Zoho CRM → עסקאות', action: 'השלם עסקה שכוללת מוצר תוכנה בהצעת המחיר', data: null, result: 'נפתח טיקט חדש ב-Zoho Desk קטגוריית תוכנה עם שם הלקוח ומספר העסקה' },
-  'a12': { module: 'Zoho CRM → עסקאות → פתח עסקה → ערוך הצעת מחיר מקושרת', action: 'שנה כמות או מחיר של מוצר ושמור', data: null, result: 'שדה "סכום עסקה" ברשומת העסקה מתעדכן אוטומטית' },
-  'a13': { module: 'Zoho CRM → עסקאות → פתח עסקה שהושלמה', action: 'נסה לערוך שדות ברשומה', data: null, result: 'שדות מוצגים כ-read-only; לא ניתן לשמור שינויים' },
-  'a14': { module: 'Zoho CRM → הצעות מחיר → צור הצעת מחיר חדשה', action: 'הוסף מוצרים לטבלת הפריטים', data: null, result: 'מוצגות שתי עמודות מחיר: "תשלום חד-פעמי" ו"תשלום חודשי חוזר"' },
-  'a15': { module: 'Zoho CRM → הצעות מחיר → הוסף מוצרים', action: 'חפש מוצר מסוג Bundle והוסף אותו', data: null, result: 'Bundle נוסף כפריט אחד עם כל המוצרים הכלולים בו' },
+  'a3': { module: 'Zoho CRM ← לידים', action: 'צור ליד חדש ומלא שדה "מספר עובדים" > 800, שמור', data: 'מספר עובדים: 900', result: 'הליד מוקצה לאשר אוטומטית' },
+  'a4': { module: 'Zoho CRM ← לידים ← ליד קיים', action: 'שנה סטטוס ל"לא רלוונטי" ונסה לשמור ללא מילוי שדה הסיבה', data: null, result: 'מוצגת שגיאת אימות "נדרשת סיבה"; לאחר מילוי הסיבה — שמירה מצליחה' },
+  'a5': { module: 'Zoho CRM ← לידים ← פתח ליד', action: 'לחץ "המר ליד"', data: null, result: 'נוצרים אוטומטית: לקוח, איש קשר ועסקה חדשים; שם העסקה, שלב ("Needs Analysis") ותאריך סגירה מוגדרים אוטומטית' },
+  'a7': { module: 'Zoho CRM ← עסקאות ← פתח עסקה', action: 'עדכן שלב העסקה ב-Blueprint לפי הסדר', data: null, result: 'כל שלב דורש השלמת שדות חובה; לא ניתן לדלג על שלבים' },
+  'a8': { module: 'Zoho CRM ← עסקאות ← פתח עסקה', action: 'נסה לשנות שלב ל"הושלמה" ללא הזמנה מאושרת מקושרת', data: null, result: 'כלל אימות (Validation Rule) חוסם את השמירה ומציג הודעת שגיאה' },
+  'a9': { module: 'Zoho CRM ← עסקאות', action: 'שנה שלב עסקה ל"הושלמה" (עם הזמנה מאושרת מקושרת)', data: null, result: 'שדה "Customer Status" ברשומת הלקוח המקושרת מתעדכן אוטומטית ל"פעיל"' },
+  'a10': { module: 'Zoho CRM ← עסקאות ← פתח עסקה', action: 'ודא ששדה Solution_Type מוגדר ל"חומרה", ולאחר מכן שנה שלב ל"הושלמה"', data: null, result: 'נפתח טיקט ב-Zoho Desk עם נושא "New Install – Hardware – [שם לקוח]" בסטטוס "Technician Coordination"' },
+  'a11': { module: 'Zoho CRM ← עסקאות ← פתח עסקה', action: 'ודא ששדה Solution_Type מוגדר ל"תוכנה", ולאחר מכן שנה שלב ל"הושלמה"', data: null, result: 'נפתח טיקט ב-Zoho Desk עם נושא "New Install – Software – [שם לקוח]" בסטטוס "Technician Coordination"' },
+  'a12': { module: 'Zoho CRM ← הצעות מחיר ← פתח הצעה המקושרת לעסקה', action: 'שנה כמות או מחיר של מוצר ושמור', data: null, result: 'שדה "Amount" ברשומת העסקה המקושרת מתעדכן אוטומטית לפי ה-Grand_Total של ההצעה' },
+  'a13': { module: 'Zoho CRM ← עסקאות ← פתח עסקה שהושלמה', action: 'נסה לערוך שדות ברשומה', data: null, result: 'שדות מוצגים כ-read-only; לא ניתן לשמור שינויים' },
+  'a14': { module: 'Zoho CRM ← הצעות מחיר ← צור הצעת מחיר חדשה', action: 'הוסף מוצרים לטבלת הפריטים', data: null, result: 'מוצגות שתי עמודות מחיר: "תשלום חד-פעמי" ו"תשלום חודשי חוזר"' },
+  'a15': { module: 'Zoho CRM ← הצעות מחיר ← הוסף מוצרים', action: 'חפש מוצר מסוג Bundle והוסף אותו', data: null, result: 'Bundle נוסף כפריט אחד עם כל המוצרים הכלולים בו' },
   'a16': null,
   'a17': null,
-  'a18': { module: 'Zoho CRM → הצעות מחיר → פתח הצעה מאושרת', action: 'לחץ "שלח לחתימה" (Zoho Sign)', data: 'כתובת מייל הלקוח', result: 'הלקוח מקבל מייל מ-Zoho Sign; בתוך המסמך הוא בוחר תנאי תשלום' },
-  'a19': { module: 'Zoho Sign (כניסה כלקוח דרך קישור המייל)', action: 'חתום על ההצעה', data: null, result: 'נוצרת הזמנה חדשה ב-CRM; נשלח ללקוח מייל עם קישור לתשלום' },
-  'a20': { module: 'Zoho CRM → הצעות מחיר', action: 'שנה תאריך תפוגה של הצעה לתאריך עבר', data: null, result: 'הצעה מסומנת אוטומטית כ"פגת תוקף"' },
-  'a21': { module: 'Zoho CRM → הצעות מחיר → פתח הצעה', action: 'לחץ "שלח לחתימה"', data: null, result: 'המסמך נפתח ב-Zoho Sign עם שדות חתימה; לאחר חתימה — הסטטוס מסתנכרן ל-CRM' },
+  'a18': { module: 'Zoho CRM ← הצעות מחיר ← פתח הצעה מאושרת', action: 'לחץ "שלח לחתימה" (Zoho Sign)', data: 'כתובת מייל הלקוח', result: 'הלקוח מקבל מייל מ-Zoho Sign; בתוך המסמך הוא בוחר תנאי תשלום' },
+  'a19': { module: 'Zoho Sign (כניסה כלקוח דרך קישור המייל)', action: 'חתום על ההצעה', data: null, result: 'נוצרת הזמנה ב-CRM בסטטוס "Approved by Customer"; שלב העסקה מתעדכן ל-"Payment"; נשלח מייל ללקוח עם קישור תשלום (שים לב: הקישור הוא placeholder — ממתין לחיבור ספק סליקה)' },
+  'a20': { module: 'Zoho CRM ← הצעות מחיר', action: 'שנה את שדה "Valid_Till" (תאריך תפוגה) לתאריך היום ושמור', data: null, result: 'ב-08:00 בבוקר של אותו יום — ההצעה מסומנת אוטומטית כ"פגת תוקף"; אם כבר עברה 08:00 — שנה לתאריך מחר' },
+  'a21': { module: 'Zoho CRM ← הצעות מחיר ← פתח הצעה', action: 'לחץ "שלח לחתימה"', data: null, result: 'המסמך נפתח ב-Zoho Sign עם שדות חתימה; לאחר חתימה — הסטטוס מסתנכרן ל-CRM' },
   'a22': null,
-  'a23': { module: 'Zoho CRM → הזמנות', action: 'צור הזמנה עם סטטוס "לא שולם" ושנה תאריך יצירה ל-3+ ימים אחורה לצורך בדיקה', data: null, result: 'תזכורת תשלום נשלחת ללקוח אוטומטית' },
+  'a23': { module: 'Zoho CRM ← הזמנות', action: 'צור הזמנה עם Payment_Status="ממתין לתשלום" ושנה את תאריך היצירה ל-3+ ימים אחורה (לצורך בדיקה)', data: 'Payment Status: ממתין לתשלום', result: 'מייל תזכורת תשלום נשלח ללקוח אוטומטית 3 ימים לאחר יצירת ההזמנה' },
   'a24': null,
   'a25': null,
-  'a26': { module: 'Zoho CRM → הזמנות → פתח הזמנה', action: 'לחץ "פתח פרויקט"', data: null, result: 'פרויקט חדש נפתח ב-Zoho Projects מקושר להזמנה' },
+  'a26': { module: 'Zoho CRM ← הזמנות ← פתח הזמנה', action: 'לחץ "פתח פרויקט"', data: null, result: 'פרויקט חדש נפתח ב-Zoho Projects מקושר להזמנה' },
   'a27': null,
-  'a28': { module: 'Zoho CRM → מוצרים (Products)', action: 'גלוש ברשימת המוצרים ועיין בשדות קטגוריה', data: null, result: 'מוצרים מאורגנים לפי עולם ← משפחה ← סוג מוצר' },
-  'a29': { module: 'Zoho CRM → הצעות מחיר → הוסף מוצר', action: 'הוסף את אותו מוצר בכמויות שונות (1, 5, 20)', data: null, result: 'מחיר ליחידה משתנה אוטומטית לפי מחירון Standard / Volume / Renewal' },
+  'a28': { module: 'Zoho CRM ← מוצרים (Products)', action: 'גלוש ברשימת המוצרים ועיין בשדות קטגוריה', data: null, result: 'מוצרים מאורגנים לפי עולם ← משפחה ← סוג מוצר' },
+  'a29': { module: 'Zoho CRM ← הצעות מחיר ← הוסף מוצר', action: 'הוסף את אותו מוצר בכמויות שונות (1, 5, 20)', data: null, result: 'מחיר ליחידה משתנה אוטומטית לפי מחירון Standard / Volume / Renewal' },
   'b1': null,
   'b2': null,
   'b3': null,
   'b4': null,
-  'b5': { module: 'Zoho Desk → פתח קריאת שירות של לקוח קיים', action: 'עיין בחלונית "פרטי לקוח" בצד ימין של הקריאה', data: null, result: 'מוצג: "חוזה שירות פעיל עד [תאריך]" או "ללא חוזה שירות"' },
-  'b6': { module: 'Zoho Desk → פתח קריאה של לקוח ללא חוזה', action: 'לחץ "קריאת שירות בתשלום"', data: null, result: 'נוצרת עסקה ב-CRM מסוג "קריאת שירות" ומוקצית לריקי' },
-  'b7': { module: 'Zoho Desk → Blueprint → פתח קריאה', action: 'עדכן את שלב הקריאה בסדר הנכון', data: null, result: 'כל שלב דורש השלמת שדות חובה; לא ניתן לדלג: פתוחה → בטיפול → תיאום טכנאי → טכנאי תואם → סגורה' },
-  'b8': { module: 'Zoho Desk → פתח קריאה', action: 'עיין בחלונית SLA בקריאה', data: null, result: 'מוצג ספירת עצור ל-SLA: תגובה ראשונה ≤4 שעות, סגירה ≤8 שעות (תוכנה) / ≤48 שעות (חומרה)' },
-  'b9': { module: 'Zoho Desk → SLA', action: 'צור קריאה ואל תגיב תוך 4 שעות (לבדיקה: שנה שעת יצירה)', data: null, result: 'מייל / התראה נשלחים למנהל המחלקה על חריגה' },
-  'b10': { module: 'Zoho Desk → צור קריאה חדשה', action: 'בחר קטגוריה ותת-קטגוריה שונות', data: null, result: 'קריאה מוקצית אוטומטית לנציג / מחלקה המתאימה לקטגוריה שנבחרה' },
+  'b5': { module: 'Zoho Desk ← פתח קריאת שירות של לקוח קיים', action: 'עיין בחלונית "פרטי לקוח" בצד ימין של הקריאה', data: null, result: 'מוצג שדה "Has Active Contract" — True אם ללקוח חוזה שירות פעיל, False אם לא' },
+  'b6': { module: 'Zoho Desk ← פתח קריאה של לקוח ללא חוזה', action: 'לחץ "קריאת שירות בתשלום"', data: null, result: 'נוצרת עסקה ב-CRM מסוג "קריאת שירות" ומוקצית לריקי' },
+  'b7': { module: 'Zoho Desk ← Blueprint ← פתח קריאה', action: 'עדכן את שלב הקריאה בסדר הנכון', data: null, result: 'כל שלב דורש השלמת שדות חובה; לא ניתן לדלג: פתוחה ← בטיפול ← תיאום טכנאי ← טכנאי תואם ← סגורה' },
+  'b8': { module: 'Zoho Desk ← פתח קריאה', action: 'עיין בחלונית SLA בקריאה', data: null, result: 'מוצג ספירת עצור ל-SLA: תגובה ראשונה ≤4 שעות, סגירה ≤8 שעות (תוכנה) / ≤48 שעות (חומרה)' },
+  'b9': { module: 'Zoho Desk ← SLA', action: 'צור קריאה ואל תגיב תוך 4 שעות (לבדיקה: שנה שעת יצירה)', data: null, result: 'מייל / התראה נשלחים למנהל המחלקה על חריגה' },
+  'b10': { module: 'Zoho Desk ← צור קריאה חדשה', action: 'בחר קטגוריה ותת-קטגוריה שונות', data: null, result: 'קריאה מוקצית אוטומטית לנציג / מחלקה המתאימה לקטגוריה שנבחרה' },
   'b11': null,
-  'b12': { module: 'Zoho Desk → פתח קריאה → לחץ "תאם ביקור"', action: 'בחר תאריך, שעה וטכנאי ב-Zoho Bookings', data: null, result: 'הביקור נקבע; מייל עם פרטי הביקור נשלח ללקוח אוטומטית' },
+  'b12': { module: 'Zoho Desk ← פתח קריאה ← לחץ "תאם ביקור"', action: 'בחר תאריך, שעה וטכנאי ב-Zoho Bookings', data: null, result: 'הביקור נקבע; מייל עם פרטי הביקור נשלח ללקוח אוטומטית' },
   'b13': { module: 'Zoho Bookings (לאחר תיאום מ-Desk)', action: 'תאם ביקור', data: null, result: 'מייל אוטומטי נשלח ללקוח עם תאריך, שעה ושם הטכנאי' },
-  'b14': { module: 'אפליקציית טכנאים (Zoho Creator)', action: 'סמן "סיים ביקור" באפליקציה', data: null, result: 'קריאת השירות המקושרת ב-Desk עוברת אוטומטית לשלב "ממתין לסגירה"' },
-  'b15': { module: 'Zoho Bookings → הגדרות', action: 'כנס כמשתמש אשר והוסף שירות / משאב חדש', data: null, result: 'שירות חדש זמין לתיאום ביקורים' },
+  'b14': { module: 'אפליקציית טכנאים (Zoho Creator)', action: 'סמן "סיים ביקור" (ודא שלביקור מקושרת קריאת שירות ב-Desk)', data: null, result: 'קריאת השירות ב-Desk עוברת אוטומטית לסטטוס "Waiting for Closure" (ממתין לסגירה)' },
+  'b15': { module: 'Zoho Bookings ← הגדרות', action: 'כנס כמשתמש אשר והוסף שירות / משאב חדש', data: null, result: 'שירות חדש זמין לתיאום ביקורים' },
   'b16': null,
-  'b17': { module: 'Zoho CRM → חוזי שירות', action: 'הגדר חוזה עם תאריך פקיעה בעוד 60 יום (לבדיקה מהירה: שנה תאריך פקיעה ל-60 יום קדימה)', data: null, result: 'נוצרת משימה לאחראי + מייל תזכורת נשלח ללקוח' },
-  'b18': { module: 'Zoho CRM → חוזי שירות', action: 'הגדר חוזה עם תאריך פקיעה בעוד 30 יום', data: null, result: 'מייל תזכורת שני נשלח ללקוח' },
+  'b17': { module: 'Zoho CRM ← חוזי שירות', action: 'הגדר חוזה עם תאריך פקיעה בעוד 60 יום (לבדיקה מהירה: שנה תאריך פקיעה ל-60 יום קדימה)', data: null, result: 'נוצרת משימה לבעל החוזה + מייל "Contract Renewal Reminder – 60 Days" נשלח ללקוח' },
+  'b18': { module: 'Zoho CRM ← חוזי שירות', action: 'הגדר חוזה עם תאריך פקיעה בעוד 30 יום', data: null, result: 'נשלחים שני מיילים: אחד ללקוח ואחד לבעל החוזה — "Contract Renewal Reminder – 30 Days"' },
   'b19': null,
   'c1': { module: 'Zoho Bookings / Zoho Desk', action: 'תאם ביקור דרך כפתור "תאם ביקור" בקריאה', data: null, result: 'מייל נשלח ללקוח + נוצרת רשומת ביקור ב-CRM מקושרת לקריאה' },
   'c2': null,
   'c3': { module: 'אפליקציית טכנאים (Zoho Creator) — כניסה כמשתמש טכנאי', action: 'פתח את האפליקציה', data: null, result: 'מוצגים ביקורי היום: שם לקוח, כתובת, כפתור Waze וחיוג ישיר' },
   'c4': { module: 'אפליקציית טכנאים (Zoho Creator)', action: 'גלוש ללשונית "ביקורים עתידיים"', data: null, result: 'רשימת ביקורים מקובצת לפי ימים עם חיפוש' },
-  'c5': { module: 'אפליקציית טכנאים → פתח ביקור ספציפי', action: 'לחץ "התחל ביקור"', data: null, result: 'סטטוס הביקור עודכן ל-Active; שעת ההתחלה נרשמת ב-CRM' },
-  'c6': { module: 'אפליקציית טכנאים → ביקור פעיל', action: 'לחץ "סיים ביקור", מלא סיכום וסטטוס סופי', data: null, result: 'הביקור נסגר; ניתן גם לסמן "בוטל" עם סיבה' },
-  'c7': { module: 'אפליקציית טכנאים → מסך סיום ביקור', action: 'לחץ "חתימת לקוח" ובקש מהלקוח לחתום על המסך', data: null, result: 'חתימה דיגיטלית נשמרת ומצורפת לרשומת הביקור' },
+  'c5': { module: 'אפליקציית טכנאים ← פתח ביקור ספציפי', action: 'לחץ "התחל ביקור"', data: null, result: 'סטטוס הביקור עודכן ל-Active; שעת ההתחלה נרשמת ב-CRM' },
+  'c6': { module: 'אפליקציית טכנאים ← ביקור פעיל', action: 'לחץ "סיים ביקור", מלא סיכום וסטטוס סופי', data: null, result: 'הביקור נסגר; ניתן גם לסמן "בוטל" עם סיבה' },
+  'c7': { module: 'אפליקציית טכנאים ← מסך סיום ביקור', action: 'לחץ "חתימת לקוח" ובקש מהלקוח לחתום על המסך', data: null, result: 'חתימה דיגיטלית נשמרת ומצורפת לרשומת הביקור' },
   'c8': null,
   'c9': null,
   'c10': null,
   'c11': null,
   'c12': null,
-  'c13': { module: 'אפליקציית טכנאים', action: 'סמן "סיים ביקור"', data: null, result: 'קריאת השירות ב-Desk מתעדכנת אוטומטית ל"ממתין לסגירה"' },
+  'c13': { module: 'אפליקציית טכנאים', action: 'סמן "סיים ביקור" (ודא שלביקור מקושרת קריאת שירות ב-Desk)', data: null, result: 'קריאת השירות ב-Desk מתעדכנת אוטומטית לסטטוס "Waiting for Closure" (ממתין לסגירה)' },
   'c14': null,
-  'c15': { module: 'Zoho CRM → עסקאות → עסקת Enterprise', action: 'לחץ "פתח פרויקט" מתוך רשומת עסקת Enterprise', data: null, result: 'פרויקט נפתח ב-Zoho Projects עם אבני דרך ומשימות מתבנית' },
+  'c15': { module: 'Zoho CRM ← עסקאות ← עסקת Enterprise', action: 'לחץ "פתח פרויקט" מתוך רשומת עסקת Enterprise', data: null, result: 'פרויקט נפתח ב-Zoho Projects עם אבני דרך ומשימות מתבנית' },
   'c16': { module: 'Zoho Projects', action: 'בדוק ידנית שמשימות הפרויקט תואמות את המוצרים שנרכשו בעסקה', data: null, result: 'משימות מוצגות בהתאם לסוג המוצרים (חומרה / תוכנה / Enterprise)' },
   'd1': null,
   'd2': null,
@@ -338,11 +362,11 @@ const sections = [
         { id:'a1', req:'ליד חדש מהאתר נכנס אוטומטית ל-CRM', status:'done' },
         { id:'a2', req:'ליד ממספר WhatsApp מכירות — נכנס אוטומטית ל-CRM', status:'pending', note:'ממתין למספר WhatsApp מהלקוח' },
         { id:'a3', req:'ניתוב אוטומטי: >800 עובדים ← אשר | בקרת כניסה ← בועז | הערכת ביצועים ← ש', status:'done', note:'הניתוב קיים — צריך לחבר את בועז כשיהיה לו יוזר' },
-        { id:'a4', req:"ליד שסומן 'לא רלוונטי' — חובה לציין סיבה לפני שמירה", status:'done' },
+        { id:'a4', req:"ליד שסומן 'לא רלוונטי' — חובה לציין סיבה לפני שמירה", status:'done', note:'סטטוס ״לא רלוונטי״ הורד ע״י זמן-אמת' },
         { id:'a5', req:'המרת ליד ללקוח + איש קשר + עסקה בלחיצה אחת', status:'done' },
       ]},
       { title:'ניהול עסקה', items:[
-        { id:'a7', req:'עסקה עוברת בשלבים: אפיון ← הדגמה ← הצ.מ ← מו"מ ← תשלום ← הושלמה', status:'done' },
+        { id:'a7', req:'עסקה עוברת בשלבים: אפיון ← הדגמה ← הצ.מ ← מו"מ ← תשלום ← הושלמה', status:'done', note:'סטטוסים שונו ע״י זמן-אמת' },
         { id:'a8', req:"לא ניתן לסמן עסקה 'הושלמה' ללא הזמנה מאושרת מקושרת", status:'done' },
         { id:'a9', req:"כשעסקה מושלמת — סטטוס לקוח הופך ל'פעיל' אוטומטית", status:'done' },
         { id:'a10', req:'כשעסקה מושלמת + חומרה — נפתח טיקט חומרה ב-Desk אוטומטית', status:'done' },
@@ -352,7 +376,7 @@ const sections = [
       ]},
       { title:'הצעות מחיר', items:[
         { id:'a14', req:'הצעת מחיר עם 2 עמודות מחיר: תשלום חד-פעמי ותשלום חודשי חוזר', status:'done' },
-        { id:'a15', req:'ניתן לצרף חבילות (Bundle) להצעת מחיר', status:'done' },
+        { id:'a15', req:'ניתן לצרף חבילות (Bundle) להצעת מחיר', status:'pending', note:'קיים אפשרות להוספת ב-CPQ, נדרש להגדיר חבילות' },
         { id:'a16', req:'בעת הוספת מוצר חומרה — בדיקת מלאי זמין מ-OneView', status:'postponed', note:'ממתין לאינטגרציית OneView' },
         { id:'a17', req:'הצעה עם הנחה מעל הסף — ננעלת ועוברת לאישור אשר / מאור', status:'pending', note:'הסף טרם הוגדר על-ידי הלקוח' },
         { id:'a18', req:'שליחה לחתימה דיגיטלית — לקוח בוחר תנאי תשלום בתוך המסמך', status:'done' },
@@ -436,7 +460,6 @@ const sections = [
         { id:'c14', req:'סקר שביעות רצון נשלח ללקוח לאחר ביקור', status:'pending', note:'ממתין להחלטה על נוסח + ערוץ' },
       ]},
       { title:'פרויקטים מורכבים', items:[
-        { id:'c15', req:'עסקאות Enterprise מנוהלות כפרויקט עם אבני דרך ומשימות', status:'done' },
         { id:'c16', req:'משימות פרויקט דינמיות לפי מוצרים שנרכשו', status:'notinspec', note:'הועלה כתוספת בפגישה 8/6 — נווה הסביר שחורג מהאפיון המקורי. נדרשת הערכת מחיר נפרדת.' },
       ]},
     ]
@@ -645,7 +668,7 @@ function renderSections() {
         const rowCls = `row-${item.status}${item.notInSpec ? ' row-notinspec' : ''}`;
         html += `<tr class="${rowCls}" data-status="${item.status}" data-notinspec="${!!item.notInSpec}" data-id="${item.id}">`;
         html += `<td class="col-n">${idx+1}</td>`;
-        html += `<td><div class="req-cell"><span>${item.req}</span><button class="guide-btn" onclick="toggleGuide('${item.id}')">📋</button></div></td>`;
+        html += `<td><div class="req-cell"><span>${item.req}</span><button class="guide-btn" onclick="toggleGuide('${item.id}')">✦ AI</button></div></td>`;
         if (!noStCols) {
           html += `<td>${statusBadge(item.status, item.notInSpec)}</td>`;
           html += `<td><span class="wn">${item.note||''}</span></td>`;
@@ -714,11 +737,17 @@ function renderStats() {
     { key:'partial',   dot:'#f97316', label:`◑ חלקי`, count: st.partial },
     { key:'notinspec', dot:'#a78bfa', label:`★ לא באפיון`, count: st.notinspec },
   ];
-  con.innerHTML = defs.map(d =>
-    `<div class="hst" onclick="setFilter('${d.key}',this)" data-key="${d.key}">
-      <span class="hst-dot" style="background:${d.dot}"></span>${d.label} <strong>${d.count}</strong>
-    </div>`
-  ).join('') + `<div class="hst" style="cursor:default;opacity:.6">סה"כ <strong>${st.total}</strong></div>`;
+  con.innerHTML =
+    `<div class="hst hst-all active" onclick="setFilter('all',this)">הכל <strong>${st.total}</strong></div>` +
+    defs.map(d =>
+      `<div class="hst" onclick="setFilter('${d.key}',this)" data-key="${d.key}">
+        <span class="hst-dot" style="background:${d.dot}"></span>${d.label} <strong>${d.count}</strong>
+      </div>`
+    ).join('') +
+    `<div class="hst" style="cursor:default;background:rgba(109,40,217,.22);border-color:rgba(109,40,217,.5);gap:7px">` +
+    `<span style="color:#c4b5fd;font-weight:800">✦ AI</span>` +
+    `<span style="font-size:11px;color:rgba(255,255,255,.75)">לחצו לקבלת הנחיית בדיקה</span>` +
+    `</div>`;
 }
 
 // ──────────────────────────────────────────────
@@ -729,8 +758,10 @@ let currentFilter = 'all';
 
 function setFilter(key, btn) {
   currentFilter = key;
-  document.querySelectorAll('.fbtn, .hst[data-key]').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll(`.fbtn`).forEach(b => { if(b.textContent.includes('הכל') && key==='all') b.classList.add('active'); });
+  document.querySelectorAll('.hst[data-key], .hst-all').forEach(b => b.classList.remove('active'));
+  if (key === 'all') {
+    document.querySelectorAll('.hst-all').forEach(b => b.classList.add('active'));
+  }
   if (btn) btn.classList.add('active');
   if (key !== 'all') {
     document.querySelectorAll('.hst[data-key="'+key+'"]').forEach(b => b.classList.add('active'));
@@ -918,10 +949,137 @@ function syncAllMirrors() {
   document.querySelectorAll('textarea').forEach(syncMirror);
 }
 
+// ──────────────────────────────────────────────
+// TABS
+// ──────────────────────────────────────────────
+
+function switchTab(tab) {
+  const isDoc = tab === 'doc';
+  document.getElementById('tab-doc').classList.toggle('active', isDoc);
+  document.getElementById('tab-hist').classList.toggle('active', !isDoc);
+  document.getElementById('doc-panel').style.display = isDoc ? '' : 'none';
+  document.getElementById('history-panel').style.display = isDoc ? 'none' : '';
+  if (!isDoc) loadHistory();
+}
+
+// ──────────────────────────────────────────────
+// HISTORY
+// ──────────────────────────────────────────────
+
+function buildItemLabel(id) {
+  for (const sec of sections) {
+    for (const sub of sec.subsections) {
+      const item = sub.items.find(it => it.id === id);
+      if (item) return `${id} — ${item.req.substring(0, 45)}${item.req.length > 45 ? '…' : ''}`;
+    }
+  }
+  return id;
+}
+
+function diffSnapshots(cur, prev) {
+  const changes = [];
+  const allIds = new Set([...Object.keys(cur), ...Object.keys(prev)]);
+  allIds.forEach(id => {
+    const c = cur[id] || {};
+    const p = prev[id] || {};
+    const label = buildItemLabel(id);
+    if ((c.reviewer || '') !== (p.reviewer || '')) {
+      if (c.reviewer) changes.push({ id, label, what: `בודק: "${c.reviewer}"` });
+      else changes.push({ id, label, what: 'שם הבודק הוסר' });
+    }
+    if (!!c.approved !== !!p.approved) {
+      changes.push({ id, label, what: c.approved ? 'סומן כמאושר ✓' : 'אישור בוטל' });
+    }
+    if ((c.notes || '').trim() !== (p.notes || '').trim()) {
+      if (c.notes && c.notes.trim()) changes.push({ id, label, what: `הערה: "${c.notes.trim().substring(0, 60)}${c.notes.trim().length > 60 ? '…' : ''}"` });
+      else changes.push({ id, label, what: 'הערה נמחקה' });
+    }
+  });
+  return changes;
+}
+
+function renderHistoryEntry(entry, prevEntry) {
+  const dt = new Date(entry.ts);
+  const dateStr = dt.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const timeStr = dt.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  const cur = entry.snapshot || {};
+  const prev = prevEntry ? (prevEntry.snapshot || {}) : null;
+  const changes = prev ? diffSnapshots(cur, prev) : null;
+
+  let body = '';
+  if (changes === null) {
+    body = `<div class="hist-first">שמירה ראשונה — בסיס להשוואה</div>`;
+  } else if (changes.length === 0) {
+    body = `<div class="hist-no-change">לא זוהו שינויים לעומת השמירה הקודמת</div>`;
+  } else {
+    body = `<div class="hist-changes">` +
+      changes.map(ch =>
+        `<div class="hist-change"><span class="hist-id">${ch.id}</span><span class="hist-what">${ch.what}</span></div>`
+      ).join('') +
+    `</div>`;
+  }
+
+  return `<div class="hist-entry">
+    <div class="hist-header">
+      <span class="hist-time">${dateStr} &nbsp; ${timeStr}</span>
+      <span class="hist-label">${changes ? changes.length + ' שינויים' : 'שמירה ראשונה'}</span>
+    </div>
+    ${body}
+  </div>`;
+}
+
+async function loadHistory() {
+  const list = document.getElementById('history-list');
+  try {
+    const res = await fetch('/api/history');
+    const entries = await res.json();
+    if (!entries.length) {
+      list.innerHTML = '<div class="hist-empty">אין היסטוריית שמירות עדיין</div>';
+      return;
+    }
+    list.innerHTML = entries.map((e, i) => renderHistoryEntry(e, entries[i + 1] || null)).join('');
+  } catch(err) {
+    list.innerHTML = '<div class="hist-empty">שגיאה בטעינת ההיסטוריה</div>';
+  }
+}
+
+// ──────────────────────────────────────────────
+// AUTO SAVE
+// ──────────────────────────────────────────────
+
+let _saveTimer = null;
+
+async function autoSave() {
+  const data = collectData();
+  const el = document.getElementById('save-st');
+  el.textContent = 'שומר...';
+  el.classList.remove('ok');
+  try {
+    await fetch('/api/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    // log to history (fire-and-forget)
+    fetch('/api/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ snapshot: data })
+    }).catch(() => {});
+    el.textContent = 'נשמר ✓';
+    el.classList.add('ok');
+  } catch(e) {
+    el.textContent = 'שגיאת שמירה — בדוק חיבור';
+  }
+}
+
 function markUnsaved() {
   const el = document.getElementById('save-st');
-  el.textContent = 'יש שינויים שלא נשמרו';
+  el.textContent = 'שומר...';
   el.classList.remove('ok');
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(autoSave, 800);
 }
 
 window.onbeforeprint = () => {
@@ -939,9 +1097,6 @@ renderSections();
 renderQuestions();
 renderStats();
 loadData();
-
-// set "הכל" as active on init
-document.querySelector('.fbtn').classList.add('active');
 </script>
 </body>
 </html>
